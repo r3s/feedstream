@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feeds</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Feeds</h1>
+            <div>
+                <a href="/feeds/add" class="btn">Add Feed</a>
+                <a href="/feeds/refresh" class="btn">Refresh</a>
+                <a href="/logout" class="btn">Logout</a>
+            </div>
+        </div>
+        {{range .}}
+            <h2>{{.Date}}</h2>
+            <div class="feed-items-grid">
+            {{range .Items}}
+                <div class="feed-item {{if .IsNew}}new{{end}}">
+                    <h3><a href="{{.Link}}" target="_blank">{{.Title}}</a></h3>
+                    <p class="feed-description">{{.Description}}</p>
+                    <p class="feed-name">{{.FeedName}}</p>
+                </div>
+            {{end}}
+            </div>
+        {{end}}
+    </div>
+</body>
+</html>

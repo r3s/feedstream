@@ -1,0 +1,35 @@
+[build]
+builder = "DOCKER"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[env]
+DB_HOST = { $generate = "postgresql.host" }
+DB_PORT = { $generate = "postgresql.port" }
+DB_USER = { $generate = "postgresql.user" }
+DB_PASSWORD = { $generate = "postgresql.password" }
+DB_NAME = { $generate = "postgresql.database" }
+APP_PORT = "8080"
+SESSION_SECRET = { $generate = "secret" }
+
+[experimental]
+configVersion = 2
+
+[[services]]
+name = "rss-reader-app"
+source = "."
+
+[services.healthcheck]
+path = "/"
+timeout = 300
+
+[[services]]
+name = "postgresql"
+template = "postgresql"
+
+[services.variables]
+POSTGRES_DB = "rss_reader"
