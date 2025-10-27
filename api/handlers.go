@@ -57,7 +57,10 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			body := fmt.Sprintf("Your OTP is: %s", generatedOTP)
 			err = utils.SendEmail(a.Config, email, subject, body)
 			if err != nil {
-				http.Error(w, "Error sending OTP email", http.StatusInternalServerError)
+				log.Printf("Error sending OTP email to %s: %v", email, err)
+				log.Printf("SMTP Config - Host: %s, Port: %s, Username: %s",
+					a.Config.SMTPHost, a.Config.SMTPPort, a.Config.SMTPUsername)
+				http.Error(w, fmt.Sprintf("Error sending OTP email: %v", err), http.StatusInternalServerError)
 				return
 			}
 
@@ -222,5 +225,3 @@ func (a *App) RefreshFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/feeds", http.StatusFound)
 }
-
-
