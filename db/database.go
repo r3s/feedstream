@@ -16,10 +16,17 @@ var DB *sql.DB
 // InitDB initializes the database connection
 func InitDB(cfg *config.Config) {
 	var err error
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
+	var connectionString string
 
-	DB, err = sql.Open("postgres", psqlInfo)
+	// Use DATABASE_URL if available, otherwise build from individual components
+	if cfg.DatabaseURL != "" {
+		connectionString = cfg.DatabaseURL
+	} else {
+		connectionString = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
+	}
+
+	DB, err = sql.Open("postgres", connectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
