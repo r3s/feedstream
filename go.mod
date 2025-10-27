@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/mmcdole/gofeed v1.3.0
-	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
+	github.com/resend/resend-go/v2 v2.27.0
 )
 
 require (
@@ -21,5 +21,4 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
-	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )

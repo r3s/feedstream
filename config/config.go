@@ -19,10 +19,7 @@ type Config struct {
 	DBName        string
 	AppPort       string
 	EmailFrom     string
-	SMTPHost      string
-	SMTPPort      string
-	SMTPUsername  string
-	SMTPPassword  string
+	ResendAPIKey  string
 	SessionSecret string
 }
 
@@ -42,10 +39,7 @@ func Load() *Config {
 		DatabaseURL:   getEnv("DATABASE_URL", ""),
 		AppPort:       getEnv("APP_PORT", "8080"),
 		EmailFrom:     getEnv("EMAIL_FROM", ""),
-		SMTPHost:      getEnv("SMTP_HOST", ""),
-		SMTPPort:      getEnv("SMTP_PORT", ""),
-		SMTPUsername:  getEnv("SMTP_USERNAME", ""),
-		SMTPPassword:  getEnv("SMTP_PASSWORD", ""),
+		ResendAPIKey:  getEnv("RESEND_API_KEY", ""),
 		SessionSecret: getEnv("SESSION_SECRET", generateRandomSecret()),
 	}
 

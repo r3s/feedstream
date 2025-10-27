@@ -58,8 +58,8 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			err = utils.SendEmail(a.Config, email, subject, body)
 			if err != nil {
 				log.Printf("Error sending OTP email to %s: %v", email, err)
-				log.Printf("SMTP Config - Host: %s, Port: %s, Username: %s",
-					a.Config.SMTPHost, a.Config.SMTPPort, a.Config.SMTPUsername)
+				log.Printf("Resend Config - API Key exists: %t, From: %s",
+					a.Config.ResendAPIKey != "", a.Config.EmailFrom)
 				http.Error(w, fmt.Sprintf("Error sending OTP email: %v", err), http.StatusInternalServerError)
 				return
 			}
