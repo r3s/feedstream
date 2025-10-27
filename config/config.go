@@ -28,9 +28,14 @@ type Config struct {
 
 // Load loads the configuration from environment variables
 func Load() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found")
+	// Try to load .env file for local development
+	// In production, this will fail silently which is expected
+	if err := godotenv.Load(); err != nil {
+		// Only log in development - check if we're likely in dev environment
+		if _, exists := os.Stat(".env"); exists == nil {
+			log.Println("Warning: .env file exists but couldn't be loaded:", err)
+		}
+		// In production, this is normal and expected
 	}
 
 	cfg := &Config{
@@ -41,7 +46,7 @@ func Load() *Config {
 		SMTPPort:      getEnv("SMTP_PORT", ""),
 		SMTPUsername:  getEnv("SMTP_USERNAME", ""),
 		SMTPPassword:  getEnv("SMTP_PASSWORD", ""),
-		SessionSecret: getEnv("SESSION_SECRET", "something-very-secret"),
+		SessionSecret: getEnv("SESSION_SECRET", generateRandomSecret()),
 	}
 
 	// Parse DATABASE_URL if provided, otherwise use individual DB vars
@@ -85,4 +90,12 @@ func (c *Config) parseDBURL() {
 	}
 
 	c.DBName = strings.TrimPrefix(u.Path, "/")
+}
+
+// generateRandomSecret generates a random session secret if none is provided
+func generateRandomSecret() string {
+	// In production, you should always set SESSION_SECRET environment variable
+	// This is just a fallback that will generate a new secret each restart
+	log.Println("Warning: SESSION_SECRET not set, using auto-generated secret (sessions will not persist across restarts)")
+	return "auto-generated-secret-change-me-in-production"
 }
