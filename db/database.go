@@ -261,3 +261,53 @@ func MarkItemsAsOld(userID int) error {
 	`, userID)
 	return err
 }
+
+// GetFeedByID retrieves a feed by its ID and user ID (for ownership check)
+func GetFeedByID(feedID, userID int) (*models.Feed, error) {
+	feed := &models.Feed{}
+	err := DB.QueryRow("SELECT id, name, url, user_id, created_at FROM feeds WHERE id = $1 AND user_id = $2", feedID, userID).Scan(&feed.ID, &feed.Name, &feed.URL, &feed.UserID, &feed.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return feed, nil
+}
+
+// UpdateFeed updates a feed's name and URL
+func UpdateFeed(feedID int, name, url string, userID int) error {
+	_, err := DB.Exec("UPDATE feeds SET name = $1, url = $2 WHERE id = $3 AND user_id = $4", name, url, feedID, userID)
+	return err
+}
+
+// DeleteFeed deletes a feed and all its items
+func DeleteFeed(feedID, userID int) error {
+	// Start a transaction
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Delete feed items first (due to foreign key constraint)
+	_, err = tx.Exec("DELETE FROM feed_items WHERE feed_id = $1", feedID)
+	if err != nil {
+		return err
+	}
+
+	// Delete the feed (with user ownership check)
+	result, err := tx.Exec("DELETE FROM feeds WHERE id = $1 AND user_id = $2", feedID, userID)
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected (i.e., if the feed existed and belonged to the user)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("feed not found or not owned by user")
+	}
+
+	// Commit the transaction
+	return tx.Commit()
+}

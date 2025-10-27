@@ -30,6 +30,9 @@ func (a *App) RegisterRoutes() {
 	authRouter.HandleFunc("/feeds", a.FeedsHandler).Methods("GET")
 	authRouter.HandleFunc("/feeds/add", a.AddFeedHandler).Methods("GET", "POST")
 	authRouter.HandleFunc("/feeds/refresh", a.RefreshFeedsHandler).Methods("GET")
+	authRouter.HandleFunc("/feeds/manage", a.ManageFeedsHandler).Methods("GET")
+	authRouter.HandleFunc("/feeds/edit/{id}", a.EditFeedHandler).Methods("GET", "POST")
+	authRouter.HandleFunc("/feeds/delete/{id}", a.DeleteFeedHandler).Methods("POST")
 	authRouter.HandleFunc("/feeds/debug", a.DebugHandler).Methods("GET")
 
 	// Serve static files

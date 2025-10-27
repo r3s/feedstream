@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/mmcdole/gofeed"
 )
 
@@ -146,13 +147,6 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		// Convert UTC time to local time for display
 		localTime := item.PublishedAt.Local()
 
-		// Debug first few items to see what's happening with times
-		if i < 3 {
-			log.Printf("DEBUG: Item %d - UTC: %s, Local: %s",
-				i, item.PublishedAt.Format("2006-01-02 15:04:05 UTC"),
-				localTime.Format("2006-01-02 15:04:05 MST"))
-		}
-
 		// Update the item with local time for template use
 		items[i].PublishedAt = localTime
 
@@ -264,15 +258,8 @@ func (a *App) RefreshFeedsHandler(w http.ResponseWriter, r *http.Request) {
 		for _, item := range parsedFeed.Items {
 			totalItems++
 
-			// Debug RSS date parsing
-			log.Printf("DEBUG RSS: Item '%s' raw date: '%s'", item.Title, item.Published)
-
 			// Use improved date parsing (ParseRSSDate handles fallback internally)
 			publishedAt, _ := utils.ParseRSSDate(item.Published)
-
-			log.Printf("DEBUG RSS: Parsed as UTC: %s, Local: %s",
-				publishedAt.Format("2006-01-02 15:04:05 UTC"),
-				publishedAt.Local().Format("2006-01-02 15:04:05 MST"))
 
 			// Clean up description
 			description := item.Description
@@ -309,6 +296,87 @@ func isDuplicateError(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), "duplicate key") ||
 		strings.Contains(err.Error(), "unique constraint") ||
 		strings.Contains(err.Error(), "UNIQUE"))
+}
+
+// ManageFeedsHandler handles the feed management page
+func (a *App) ManageFeedsHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.Store.Get(r, "session")
+	userID := session.Values["user_id"].(int)
+
+	feeds, err := db.GetFeedsForUser(userID)
+	if err != nil {
+		http.Error(w, "Error getting feeds", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("templates/manage_feeds.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, feeds)
+}
+
+// EditFeedHandler handles editing a feed
+func (a *App) EditFeedHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.Store.Get(r, "session")
+	userID := session.Values["user_id"].(int)
+
+	vars := mux.Vars(r)
+	feedID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid feed ID", http.StatusBadRequest)
+		return
+	}
+
+	if r.Method == "GET" {
+		feed, err := db.GetFeedByID(feedID, userID)
+		if err != nil {
+			http.Error(w, "Feed not found", http.StatusNotFound)
+			return
+		}
+
+		tmpl, err := template.ParseFiles("templates/edit_feed.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tmpl.Execute(w, feed)
+	} else if r.Method == "POST" {
+		r.ParseForm()
+		name := r.FormValue("name")
+		url := r.FormValue("url")
+
+		err = db.UpdateFeed(feedID, name, url, userID)
+		if err != nil {
+			http.Error(w, "Error updating feed", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/feeds/manage", http.StatusFound)
+	}
+}
+
+// DeleteFeedHandler handles deleting a feed
+func (a *App) DeleteFeedHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.Store.Get(r, "session")
+	userID := session.Values["user_id"].(int)
+
+	vars := mux.Vars(r)
+	feedID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid feed ID", http.StatusBadRequest)
+		return
+	}
+
+	err = db.DeleteFeed(feedID, userID)
+	if err != nil {
+		log.Printf("Error deleting feed %d: %v", feedID, err)
+		http.Error(w, "Error deleting feed", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/feeds/manage", http.StatusFound)
 }
 
 // DebugHandler shows debug information about feed items and pagination
