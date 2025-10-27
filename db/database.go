@@ -204,9 +204,6 @@ func GetFeedItemsForUserPaginated(userID int, daysOffset int) ([]models.FeedItem
 	endDate := time.Now().AddDate(0, 0, -daysOffset)
 	startDate := endDate.AddDate(0, 0, -10) // 10 days range
 
-	log.Printf("Querying feed items for user %d: startDate=%s, endDate=%s",
-		userID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
-
 	rows, err := DB.Query(`
 		SELECT i.id, i.title, i.description, i.link, f.name,
 			   i.published_at AT TIME ZONE 'UTC' as published_at, i.is_new

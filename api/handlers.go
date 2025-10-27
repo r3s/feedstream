@@ -125,8 +125,6 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("Loading feeds for user %d, days offset: %d", userID, daysOffset)
-
 	items, err := db.GetFeedItemsForUserPaginated(userID, daysOffset)
 	if err != nil {
 		http.Error(w, "Error getting feed items", http.StatusInternalServerError)
@@ -139,8 +137,6 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error checking for more items: %v", err)
 		hasMore = false
 	}
-
-	log.Printf("Found %d items, hasMore: %t, nextOffset: %d", len(items), hasMore, daysOffset+10)
 
 	// Group items by date using improved date formatting
 	groupedItems := make(map[string][]models.FeedItem)

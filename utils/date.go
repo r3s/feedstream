@@ -14,23 +14,43 @@ var rssDateFormats = []string{
 	time.RFC3339,     // "2006-01-02T15:04:05Z07:00"
 	time.RFC3339Nano, // "2006-01-02T15:04:05.999999999Z07:00"
 	"2006-01-02T15:04:05-0700",
+	"2006-01-02T15:04:05-07:00",
+	"2006-01-02T15:04:05.000-07:00",
 	"2006-01-02T15:04:05",
 	"2006-01-02 15:04:05 -0700",
+	"2006-01-02 15:04:05 -07:00",
 	"2006-01-02 15:04:05",
 	"Mon, 2 Jan 2006 15:04:05 -0700",
+	"Mon, 2 Jan 2006 15:04:05 -07:00",
 	"Mon, 2 Jan 2006 15:04:05 MST",
+	"Mon, 2 Jan 2006 15:04:05 GMT",
 	"2 Jan 2006 15:04:05 -0700",
+	"2 Jan 2006 15:04:05 -07:00",
 	"2 Jan 2006 15:04:05",
 	"2006-01-02T15:04:05.000Z",
+	"2006-01-02T15:04:05.00Z",
+	"2006-01-02T15:04:05.0Z",
 	"2006-01-02T15:04:05Z",
 	"Mon, 02 Jan 2006 15:04:05 GMT",
+	"Mon, 02 Jan 2006 15:04:05 UTC",
 	"02 Jan 2006 15:04:05 GMT",
+	"02 Jan 2006 15:04:05 UTC",
+	"January 2, 2006 15:04:05",
+	"January 2, 2006, 15:04:05",
+	"Jan 2, 2006 15:04:05",
+	"Jan 2, 2006, 15:04:05",
+	"2006/01/02 15:04:05",
+	"02/01/2006 15:04:05",
+	"2006-01-02",
+	"02/01/2006",
+	"01/02/2006",
 }
 
 // ParseRSSDate attempts to parse a date string using various RSS date formats
 func ParseRSSDate(dateStr string) (time.Time, error) {
 	if dateStr == "" {
-		return time.Now(), nil
+		log.Printf("DEBUG: Empty date string, using current time")
+		return time.Now().UTC(), nil
 	}
 
 	// Try each format until one works
@@ -41,18 +61,20 @@ func ParseRSSDate(dateStr string) (time.Time, error) {
 		}
 	}
 
-	// If no format works, log the issue and return current time
-	log.Printf("Warning: Could not parse date '%s', using current time", dateStr)
-	return time.Now().UTC(), nil
+	// If no format works, log the issue and return a very old date so it doesn't appear as "Today"
+	log.Printf("WARNING: Could not parse date '%s' with any known format, using fallback date", dateStr)
+	// Use a date from 1990 so unparseable dates don't show as "Today"
+	fallbackDate := time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC)
+	return fallbackDate, nil
 }
 
 // FormatDateForDisplay formats a time for display purposes
 func FormatDateForDisplay(t time.Time) string {
 	// Convert to local timezone for display
 	local := t.Local()
+	now := time.Now()
 
 	// Check if it's today
-	now := time.Now()
 	if isSameDay(local, now) {
 		return "Today"
 	}
