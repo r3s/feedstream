@@ -68,7 +68,8 @@ func createTables() {
 		feed_id INTEGER REFERENCES feeds(id),
 		published_at TIMESTAMP WITH TIME ZONE,
 		is_new BOOLEAN DEFAULT TRUE,
-		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(link, feed_id)
 	);`
 
 	createOTPTable := `
@@ -174,22 +175,48 @@ func GetFeedsForUser(userID int) ([]models.Feed, error) {
 	return feeds, nil
 }
 
-// CreateFeedItem creates a new feed item in the database
+// CreateFeedItem creates a new feed item in the database (prevents duplicates)
 func CreateFeedItem(item *models.FeedItem) error {
-	_, err := DB.Exec("INSERT INTO feed_items (title, description, link, feed_id, published_at) VALUES ($1, $2, $3, $4, $5)",
+	_, err := DB.Exec(`
+		INSERT INTO feed_items (title, description, link, feed_id, published_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (link, feed_id) DO UPDATE SET
+		title = EXCLUDED.title,
+		description = EXCLUDED.description,
+		published_at = EXCLUDED.published_at,
+		is_new = CASE
+			WHEN feed_items.title != EXCLUDED.title OR
+				 feed_items.description != EXCLUDED.description THEN TRUE
+			ELSE feed_items.is_new
+		END`,
 		item.Title, item.Description, item.Link, item.FeedID, item.PublishedAt)
 	return err
 }
 
 // GetFeedItemsForUser retrieves all feed items for a user
 func GetFeedItemsForUser(userID int) ([]models.FeedItem, error) {
+	return GetFeedItemsForUserPaginated(userID, 0)
+}
+
+// GetFeedItemsForUserPaginated retrieves feed items for a user with date-based pagination
+func GetFeedItemsForUserPaginated(userID int, daysOffset int) ([]models.FeedItem, error) {
+	// Calculate date range for pagination
+	endDate := time.Now().AddDate(0, 0, -daysOffset)
+	startDate := endDate.AddDate(0, 0, -10) // 10 days range
+
+	log.Printf("Querying feed items for user %d: startDate=%s, endDate=%s",
+		userID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+
 	rows, err := DB.Query(`
-		SELECT i.id, i.title, i.description, i.link, f.name, i.published_at, i.is_new
+		SELECT i.id, i.title, i.description, i.link, f.name,
+			   i.published_at AT TIME ZONE 'UTC' as published_at, i.is_new
 		FROM feed_items i
 		JOIN feeds f ON i.feed_id = f.id
 		WHERE f.user_id = $1
+		AND i.published_at <= $2
+		AND i.published_at >= $3
 		ORDER BY i.published_at DESC
-	`, userID)
+	`, userID, endDate, startDate)
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +234,25 @@ func GetFeedItemsForUser(userID int) ([]models.FeedItem, error) {
 		items = append(items, item)
 	}
 	return items, nil
+}
+
+// HasMoreFeedItems checks if there are more feed items beyond the current pagination
+func HasMoreFeedItems(userID int, daysOffset int) (bool, error) {
+	checkDate := time.Now().AddDate(0, 0, -(daysOffset + 10))
+
+	var count int
+	err := DB.QueryRow(`
+		SELECT COUNT(*)
+		FROM feed_items i
+		JOIN feeds f ON i.feed_id = f.id
+		WHERE f.user_id = $1 AND i.published_at < $2
+	`, userID, checkDate).Scan(&count)
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
 // MarkItemsAsOld marks all feed items for a user as old

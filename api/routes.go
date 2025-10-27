@@ -30,6 +30,7 @@ func (a *App) RegisterRoutes() {
 	authRouter.HandleFunc("/feeds", a.FeedsHandler).Methods("GET")
 	authRouter.HandleFunc("/feeds/add", a.AddFeedHandler).Methods("GET", "POST")
 	authRouter.HandleFunc("/feeds/refresh", a.RefreshFeedsHandler).Methods("GET")
+	authRouter.HandleFunc("/feeds/debug", a.DebugHandler).Methods("GET")
 
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
@@ -40,7 +41,7 @@ func (a *App) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := a.Store.Get(r, "session")
 		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-											http.Redirect(w, r, "/login", http.StatusFound)
+			http.Redirect(w, r, "/login", http.StatusFound)
 		}
 		next.ServeHTTP(w, r)
 	})
