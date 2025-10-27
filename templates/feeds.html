@@ -30,9 +30,20 @@
                                     <p class="feed-description">{{.Description}}</p>
                                 {{end}}
                                 <div class="item-footer">
-                                    <time class="publish-time" datetime="{{.PublishedAt.Format "2006-01-02T15:04:05Z07:00"}}">
-                                        {{.PublishedAt.Format "3:04 PM"}}
-                                    </time>
+                                    <div class="publish-info">
+                                        <time class="publish-date" datetime="{{.PublishedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+                                            {{.PublishedAt.Format "Jan 2, 2006"}}
+                                        </time>
+                                        <time class="publish-time" datetime="{{.PublishedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+                                            {{.PublishedAt.Format "3:04 PM"}}
+                                        </time>
+                                        <div class="debug-info" style="font-size: 0.7em; color: #999; margin-top: 4px; font-family: monospace;">
+                                            Full: {{.PublishedAt.Format "2006-01-02 15:04:05 MST"}}
+                                        </div>
+                                        <div class="debug-info" style="font-size: 0.7em; color: #999; font-family: monospace;">
+                                            UTC: {{.PublishedAt.UTC.Format "2006-01-02 15:04:05 UTC"}}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         {{end}}

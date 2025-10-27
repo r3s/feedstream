@@ -142,11 +142,24 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 	groupedItems := make(map[string][]models.FeedItem)
 	dateDisplayMap := make(map[string]string) // Maps grouping key to display string
 
-	for _, item := range items {
-		groupKey := utils.FormatDateForGrouping(item.PublishedAt)
-		displayDate := utils.FormatDateForDisplay(item.PublishedAt)
+	for i, item := range items {
+		// Convert UTC time to local time for display
+		localTime := item.PublishedAt.Local()
 
-		groupedItems[groupKey] = append(groupedItems[groupKey], item)
+		// Debug first few items to see what's happening with times
+		if i < 3 {
+			log.Printf("DEBUG: Item %d - UTC: %s, Local: %s",
+				i, item.PublishedAt.Format("2006-01-02 15:04:05 UTC"),
+				localTime.Format("2006-01-02 15:04:05 MST"))
+		}
+
+		// Update the item with local time for template use
+		items[i].PublishedAt = localTime
+
+		groupKey := utils.FormatDateForGrouping(localTime)
+		displayDate := utils.FormatDateForDisplay(localTime)
+
+		groupedItems[groupKey] = append(groupedItems[groupKey], items[i])
 		dateDisplayMap[groupKey] = displayDate
 	}
 
@@ -251,12 +264,15 @@ func (a *App) RefreshFeedsHandler(w http.ResponseWriter, r *http.Request) {
 		for _, item := range parsedFeed.Items {
 			totalItems++
 
-			// Use improved date parsing
-			publishedAt, err := utils.ParseRSSDate(item.Published)
-			if err != nil {
-				log.Printf("Error parsing date '%s' for item '%s': %v", item.Published, item.Title, err)
-				publishedAt = time.Now().UTC()
-			}
+			// Debug RSS date parsing
+			log.Printf("DEBUG RSS: Item '%s' raw date: '%s'", item.Title, item.Published)
+
+			// Use improved date parsing (ParseRSSDate handles fallback internally)
+			publishedAt, _ := utils.ParseRSSDate(item.Published)
+
+			log.Printf("DEBUG RSS: Parsed as UTC: %s, Local: %s",
+				publishedAt.Format("2006-01-02 15:04:05 UTC"),
+				publishedAt.Local().Format("2006-01-02 15:04:05 MST"))
 
 			// Clean up description
 			description := item.Description
