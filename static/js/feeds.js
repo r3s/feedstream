@@ -5,28 +5,39 @@ document.addEventListener("DOMContentLoaded", function () {
     const feedContent = document.getElementById("feed-content");
 
     if (feedFilter) {
+        const savedFilter = localStorage.getItem('selectedFeed');
+        if (savedFilter) {
+            feedFilter.value = savedFilter;
+            applyFeedFilter(savedFilter);
+        }
+
         feedFilter.addEventListener('change', function() {
             const selectedFeed = this.value;
-            const feedItems = document.querySelectorAll('.feed-item');
-            const dateSections = document.querySelectorAll('.date-section');
-            
-            feedItems.forEach(item => {
-                const feedName = item.getAttribute('data-feed-name');
-                if (selectedFeed === 'all' || feedName === selectedFeed) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-            
-            dateSections.forEach(section => {
-                const visibleItems = section.querySelectorAll('.feed-item:not([style*="display: none"])');
-                if (selectedFeed === 'all' || visibleItems.length > 0) {
-                    section.style.display = '';
-                } else {
-                    section.style.display = 'none';
-                }
-            });
+            localStorage.setItem('selectedFeed', selectedFeed);
+            applyFeedFilter(selectedFeed);
+        });
+    }
+
+    function applyFeedFilter(selectedFeed) {
+        const feedItems = document.querySelectorAll('.feed-item');
+        const dateSections = document.querySelectorAll('.date-section');
+        
+        feedItems.forEach(item => {
+            const feedName = item.getAttribute('data-feed-name');
+            if (selectedFeed === 'all' || feedName === selectedFeed) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        dateSections.forEach(section => {
+            const visibleItems = section.querySelectorAll('.feed-item:not([style*="display: none"])');
+            if (selectedFeed === 'all' || visibleItems.length > 0) {
+                section.style.display = '';
+            } else {
+                section.style.display = 'none';
+            }
         });
     }
 
