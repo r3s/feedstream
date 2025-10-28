@@ -3,11 +3,7 @@
     <head>
         <title>FeedStream - Feeds</title>
         <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-        <link
-            rel="stylesheet"
-            type="text/css"
-            href="/static/css/normalize.css"
-        />
+        <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
         <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
     </head>
     <body>
@@ -23,7 +19,6 @@
                 </div>
             </div>
             
-            <!-- Feed Filter -->
             <div class="filter-section">
                 <label for="feed-filter">Filter by feed:</label>
                 <select id="feed-filter">
@@ -35,210 +30,51 @@
             </div>
             
             <div id="feed-content">
-                {{if .DateGroups}} {{range .DateGroups}}
+                {{if .DateGroups}}
+                {{range .DateGroups}}
                 <div class="date-section">
                     <h2 class="date-header">{{.Date}}</h2>
                     <div class="feed-items-grid">
                         {{range .Items}}
                         <div class="feed-item {{if .IsNew}}new{{end}}" data-feed-name="{{.FeedName}}">
                             <h3>
-                                <a
-                                    href="{{.Link}}"
-                                    target="_blank"
-                                    rel="noopener"
-                                    >{{.Title}}</a
-                                >
+                                <a href="{{.Link}}" target="_blank" rel="noopener">{{.Title}}</a>
                             </h3>
                             {{if .Description}}
                             <div class="feed-description">{{.Description}}</div>
                             {{end}}
                             <div class="item-meta">
                                 <span class="feed-name">{{.FeedName}}</span> |
-                                <span class="publish-date"
-                                    >{{.PublishedAt.Format "Jan 2, 2006 3:04 PM"}}</span
-                                >
+                                <span class="publish-date">{{.PublishedAt.Format "Jan 2, 2006 3:04 PM"}}</span>
                             </div>
                         </div>
                         {{end}}
                     </div>
                 </div>
-                {{end}} {{if .HasMore}}
+                {{end}}
+                {{if .HasMore}}
                 <div class="load-more-section">
-                    <button
-                        id="load-more-btn"
-                        class="btn load-more-btn"
-                        data-next-offset="{{.NextOffset}}"
-                    >
+                    <button id="load-more-btn" class="btn load-more-btn" data-next-offset="{{.NextOffset}}">
                         Load More (Next 60 Days)
                     </button>
-                    <div
-                        id="loading"
-                        class="loading-indicator"
-                        style="display: none"
-                    >
+                    <div id="loading" class="loading-indicator" style="display: none">
                         Loading more articles...
                     </div>
                 </div>
-                {{end}} {{else}}
+                {{end}}
+                {{else}}
                 <div class="empty-state">
                     <h2>No feed items yet</h2>
                     <p>
-                        Start by
-                        <a href="/feeds/add">adding some RSS feeds</a> and then
+                        Start by <a href="/feeds/add">adding some RSS feeds</a> and then
                         refresh to see the latest articles.
                     </p>
                 </div>
                 {{end}}
             </div>
-
-            <script>
-                // Theme toggle functionality
-                function initThemeToggle() {
-                    const toggleBtn = document.getElementById('theme-toggle');
-                    const currentTheme = localStorage.getItem('theme') || 'light';
-                    
-                    // Apply saved theme
-                    if (currentTheme === 'dark') {
-                        document.documentElement.setAttribute('data-theme', 'dark');
-                        toggleBtn.textContent = '☀️';
-                    } else {
-                        document.documentElement.removeAttribute('data-theme');
-                        toggleBtn.textContent = '🌙';
-                    }
-                    
-                    // Toggle theme on click
-                    toggleBtn.addEventListener('click', function() {
-                        const isDark = document.documentElement.hasAttribute('data-theme');
-                        
-                        if (isDark) {
-                            document.documentElement.removeAttribute('data-theme');
-                            localStorage.setItem('theme', 'light');
-                            toggleBtn.textContent = '🌙';
-                        } else {
-                            document.documentElement.setAttribute('data-theme', 'dark');
-                            localStorage.setItem('theme', 'dark');
-                            toggleBtn.textContent = '☀️';
-                        }
-                    });
-                }
-
-                // Initialize theme toggle
-                initThemeToggle();
-
-                // Feed filter functionality
-                document.getElementById('feed-filter').addEventListener('change', function() {
-                    const selectedFeed = this.value;
-                    const feedItems = document.querySelectorAll('.feed-item');
-                    const dateSections = document.querySelectorAll('.date-section');
-                    
-                    feedItems.forEach(item => {
-                        const feedName = item.getAttribute('data-feed-name');
-                        if (selectedFeed === 'all' || feedName === selectedFeed) {
-                            item.style.display = '';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                    
-                    // Hide/show date sections based on whether they have visible items
-                    dateSections.forEach(section => {
-                        const visibleItems = section.querySelectorAll('.feed-item:not([style*="display: none"])');
-                        if (selectedFeed === 'all' || visibleItems.length > 0) {
-                            section.style.display = '';
-                        } else {
-                            section.style.display = 'none';
-                        }
-                    });
-                });
-
-                document.addEventListener("DOMContentLoaded", function () {
-                    const loadMoreBtn =
-                        document.getElementById("load-more-btn");
-                    const loading = document.getElementById("loading");
-                    const feedContent = document.getElementById("feed-content");
-
-                    if (loadMoreBtn) {
-                        loadMoreBtn.addEventListener("click", function () {
-                            const nextOffset =
-                                this.getAttribute("data-next-offset");
-
-                            // Show loading indicator
-                            this.style.display = "none";
-                            loading.style.display = "block";
-
-                            // Fetch more items
-                            fetch(`/feeds?days=${nextOffset}`)
-                                .then((response) => response.text())
-                                .then((html) => {
-                                    // Parse the response to extract new content
-                                    const parser = new DOMParser();
-                                    const doc = parser.parseFromString(
-                                        html,
-                                        "text/html",
-                                    );
-                                    const newContent =
-                                        doc.querySelector("#feed-content");
-
-                                    if (newContent) {
-                                        // Extract date sections (skip load more button area)
-                                        const dateSections =
-                                            newContent.querySelectorAll(
-                                                ".date-section",
-                                            );
-                                        const newLoadMoreSection =
-                                            newContent.querySelector(
-                                                ".load-more-section",
-                                            );
-
-                                        // Append new date sections
-                                        dateSections.forEach((section) => {
-                                            feedContent.insertBefore(
-                                                section,
-                                                document.querySelector(
-                                                    ".load-more-section",
-                                                ),
-                                            );
-                                        });
-
-                                        // Update or remove load more button
-                                        const currentLoadMoreSection =
-                                            document.querySelector(
-                                                ".load-more-section",
-                                            );
-                                        if (newLoadMoreSection) {
-                                            currentLoadMoreSection.replaceWith(
-                                                newLoadMoreSection,
-                                            );
-                                            // Re-attach event listener to new button
-                                            const newBtn =
-                                                document.getElementById(
-                                                    "load-more-btn",
-                                                );
-                                            if (newBtn) {
-                                                newBtn.addEventListener(
-                                                    "click",
-                                                    arguments.callee,
-                                                );
-                                            }
-                                        } else {
-                                            currentLoadMoreSection.remove();
-                                        }
-                                    }
-                                })
-                                .catch((error) => {
-                                    console.error(
-                                        "Error loading more items:",
-                                        error,
-                                    );
-                                    loading.style.display = "none";
-                                    loadMoreBtn.style.display = "block";
-                                    loadMoreBtn.textContent =
-                                        "Error - Try Again";
-                                });
-                        });
-                    }
-                });
-            </script>
         </div>
+
+        <script src="/static/js/theme.js"></script>
+        <script src="/static/js/feeds.js"></script>
     </body>
 </html>

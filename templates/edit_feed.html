@@ -3,11 +3,7 @@
     <head>
         <title>FeedStream - Edit Feed</title>
         <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-        <link
-            rel="stylesheet"
-            type="text/css"
-            href="/static/css/normalize.css"
-        />
+        <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
         <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
     </head>
     <body>
@@ -24,22 +20,10 @@
 
             <form method="POST">
                 <label for="name">Feed Name:</label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value="{{.Name}}"
-                    required
-                />
+                <input type="text" id="name" name="name" value="{{.Name}}" required />
 
                 <label for="url">Feed URL:</label>
-                <input
-                    type="url"
-                    id="url"
-                    name="url"
-                    value="{{.URL}}"
-                    required
-                />
+                <input type="url" id="url" name="url" value="{{.URL}}" required />
 
                 <button type="submit">Update Feed</button>
                 <a href="/feeds/manage" class="btn">Cancel</a>
@@ -51,39 +35,6 @@
             </div>
         </div>
 
-        <script>
-            // Theme toggle functionality
-            function initThemeToggle() {
-                const toggleBtn = document.getElementById('theme-toggle');
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                
-                // Apply saved theme
-                if (currentTheme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    toggleBtn.textContent = '☀️';
-                } else {
-                    document.documentElement.removeAttribute('data-theme');
-                    toggleBtn.textContent = '🌙';
-                }
-                
-                // Toggle theme on click
-                toggleBtn.addEventListener('click', function() {
-                    const isDark = document.documentElement.hasAttribute('data-theme');
-                    
-                    if (isDark) {
-                        document.documentElement.removeAttribute('data-theme');
-                        localStorage.setItem('theme', 'light');
-                        toggleBtn.textContent = '🌙';
-                    } else {
-                        document.documentElement.setAttribute('data-theme', 'dark');
-                        localStorage.setItem('theme', 'dark');
-                        toggleBtn.textContent = '☀️';
-                    }
-                });
-            }
-
-            // Initialize theme toggle
-            initThemeToggle();
-        </script>
+        <script src="/static/js/theme.js"></script>
     </body>
 </html>

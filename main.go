@@ -3,20 +3,22 @@ package main
 import (
 	"log"
 	"net/http"
-	"rss-reader/api"
 	"rss-reader/config"
-	"rss-reader/db"
-
-	"github.com/gorilla/mux"
+	"rss-reader/internal/app"
 )
 
 func main() {
+	// Load configuration
 	cfg := config.Load()
-	db.InitDB(cfg)
 
-	app := &api.App{Router: mux.NewRouter(), Config: cfg}
-	app.RegisterRoutes()
+	// Initialize application with dependency injection
+	application, err := app.New(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize application: %v", err)
+	}
+	defer application.Close()
 
-	log.Println("Server started on port", cfg.AppPort)
-	log.Fatal(http.ListenAndServe(":"+cfg.AppPort, app.Router))
+	// Start server
+	log.Printf("Server started on port %s", cfg.AppPort)
+	log.Fatal(http.ListenAndServe(":"+cfg.AppPort, application.Router))
 }
