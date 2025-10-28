@@ -1,127 +1,122 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>Feeds</title>
-    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>RSS Reader</h1>
-            <div>
-                <a href="/feeds/add" class="btn">Add Feed</a>
-                <a href="/feeds/manage" class="btn">Manage Feeds</a>
-                <a href="/feeds/refresh" class="btn">Refresh Feeds</a>
-                <a href="/logout" class="btn">Logout</a>
+    <head>
+        <title>Feeds</title>
+        <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
+        <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>RSS Reader</h1>
+                <div>
+                    <a href="/feeds/add" class="btn">Add Feed</a>
+                    <a href="/feeds/manage" class="btn">Manage Feeds</a>
+                    <a href="/feeds/refresh" class="btn">Refresh Feeds</a>
+                    <a href="/logout" class="btn">Logout</a>
+                </div>
             </div>
-        </div>
-        <div id="feed-content">
-            {{if .DateGroups}}
+            <div id="feed-content">
+                {{if .DateGroups}}
                 {{range .DateGroups}}
-                    <div class="date-section">
-                        <h2 class="date-header">{{.Date}}</h2>
-                        <div class="feed-items-grid">
+                <div class="date-section">
+                    <h2 class="date-header">{{.Date}}</h2>
+                    <div class="feed-items-grid">
                         {{range .Items}}
-                            <div class="feed-item {{if .IsNew}}new{{end}}">
-                                <div class="item-header">
-                                    <h3><a href="{{.Link}}" target="_blank" rel="noopener">{{.Title}}</a></h3>
-                                    <span class="feed-name">{{.FeedName}}</span>
-                                </div>
-                                {{if .Description}}
-                                    <p class="feed-description">{{.Description}}</p>
-                                {{end}}
-                                <div class="item-footer">
-                                    <div class="publish-info">
-                                        <time class="publish-date" datetime="{{.PublishedAt.Format "2006-01-02T15:04:05Z07:00"}}">
-                                            {{.PublishedAt.Format "Jan 2, 2006"}}
-                                        </time>
-                                        <time class="publish-time" datetime="{{.PublishedAt.Format "2006-01-02T15:04:05Z07:00"}}">
-                                            {{.PublishedAt.Format "3:04 PM"}}
-                                        </time>
-
-                                    </div>
-                                </div>
+                        <div class="feed-item {{if .IsNew}}new{{end}}">
+                            <h3>
+                                <a href="{{.Link}}" target="_blank" rel="noopener">{{.Title}}</a>
+                            </h3>
+                            {{if .Description}}
+                            <div class="feed-description">{{.Description}}</div>
+                            {{end}}
+                            <div class="item-meta">
+                                <span class="feed-name">{{.FeedName}}</span> |
+                                <span class="publish-date">{{.PublishedAt.Format "Jan 2, 2006 3:04 PM"}}</span>
                             </div>
+                        </div>
                         {{end}}
-                        </div>
                     </div>
+                </div>
                 {{end}}
-
                 {{if .HasMore}}
-                    <div class="load-more-section">
-                        <button id="load-more-btn" class="btn load-more-btn" data-next-offset="{{.NextOffset}}">
-                            Load More (Next 10 Days)
-                        </button>
-                        <div id="loading" class="loading-indicator" style="display: none;">
-                            Loading more articles...
-                        </div>
+                <div class="load-more-section">
+                    <button id="load-more-btn" class="btn load-more-btn" data-next-offset="{{.NextOffset}}">
+                        Load More (Next 60 Days)
+                    </button>
+                    <div id="loading" class="loading-indicator" style="display: none">
+                        Loading more articles...
                     </div>
+                </div>
                 {{end}}
-            {{else}}
+                {{else}}
                 <div class="empty-state">
                     <h2>No feed items yet</h2>
-                    <p>Start by <a href="/feeds/add">adding some RSS feeds</a> and then refresh to see the latest articles.</p>
+                    <p>
+                        Start by <a href="/feeds/add">adding some RSS feeds</a> and then
+                        refresh to see the latest articles.
+                    </p>
                 </div>
-            {{end}}
-        </div>
+                {{end}}
+            </div>
 
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const loadMoreBtn = document.getElementById('load-more-btn');
-            const loading = document.getElementById('loading');
-            const feedContent = document.getElementById('feed-content');
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const loadMoreBtn = document.getElementById("load-more-btn");
+                    const loading = document.getElementById("loading");
+                    const feedContent = document.getElementById("feed-content");
 
-            if (loadMoreBtn) {
-                loadMoreBtn.addEventListener('click', function() {
-                    const nextOffset = this.getAttribute('data-next-offset');
+                    if (loadMoreBtn) {
+                        loadMoreBtn.addEventListener("click", function () {
+                            const nextOffset = this.getAttribute("data-next-offset");
 
-                    // Show loading indicator
-                    this.style.display = 'none';
-                    loading.style.display = 'block';
+                            // Show loading indicator
+                            this.style.display = "none";
+                            loading.style.display = "block";
 
-                    // Fetch more items
-                    fetch(`/feeds?days=${nextOffset}`)
-                        .then(response => response.text())
-                        .then(html => {
-                            // Parse the response to extract new content
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(html, 'text/html');
-                            const newContent = doc.querySelector('#feed-content');
+                            // Fetch more items
+                            fetch(`/feeds?days=${nextOffset}`)
+                                .then((response) => response.text())
+                                .then((html) => {
+                                    // Parse the response to extract new content
+                                    const parser = new DOMParser();
+                                    const doc = parser.parseFromString(html, "text/html");
+                                    const newContent = doc.querySelector("#feed-content");
 
-                            if (newContent) {
-                                // Extract date sections (skip load more button area)
-                                const dateSections = newContent.querySelectorAll('.date-section');
-                                const newLoadMoreSection = newContent.querySelector('.load-more-section');
+                                    if (newContent) {
+                                        // Extract date sections (skip load more button area)
+                                        const dateSections = newContent.querySelectorAll(".date-section");
+                                        const newLoadMoreSection = newContent.querySelector(".load-more-section");
 
-                                // Append new date sections
-                                dateSections.forEach(section => {
-                                    feedContent.insertBefore(section, document.querySelector('.load-more-section'));
-                                });
+                                        // Append new date sections
+                                        dateSections.forEach((section) => {
+                                            feedContent.insertBefore(section, document.querySelector(".load-more-section"));
+                                        });
 
-                                // Update or remove load more button
-                                const currentLoadMoreSection = document.querySelector('.load-more-section');
-                                if (newLoadMoreSection) {
-                                    currentLoadMoreSection.replaceWith(newLoadMoreSection);
-                                    // Re-attach event listener to new button
-                                    const newBtn = document.getElementById('load-more-btn');
-                                    if (newBtn) {
-                                        newBtn.addEventListener('click', arguments.callee);
+                                        // Update or remove load more button
+                                        const currentLoadMoreSection = document.querySelector(".load-more-section");
+                                        if (newLoadMoreSection) {
+                                            currentLoadMoreSection.replaceWith(newLoadMoreSection);
+                                            // Re-attach event listener to new button
+                                            const newBtn = document.getElementById("load-more-btn");
+                                            if (newBtn) {
+                                                newBtn.addEventListener("click", arguments.callee);
+                                            }
+                                        } else {
+                                            currentLoadMoreSection.remove();
+                                        }
                                     }
-                                } else {
-                                    currentLoadMoreSection.remove();
-                                }
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error loading more items:', error);
-                            loading.style.display = 'none';
-                            loadMoreBtn.style.display = 'block';
-                            loadMoreBtn.textContent = 'Error - Try Again';
+                                })
+                                .catch((error) => {
+                                    console.error("Error loading more items:", error);
+                                    loading.style.display = "none";
+                                    loadMoreBtn.style.display = "block";
+                                    loadMoreBtn.textContent = "Error - Try Again";
+                                });
                         });
+                    }
                 });
-            }
-        });
-        </script>
-    </div>
-</body>
+            </script>
+        </div>
+    </body>
 </html>

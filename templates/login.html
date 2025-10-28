@@ -1,23 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>Login</title>
-    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Login</h1>
-        {{if .Message}}
+    <head>
+        <title>Login</title>
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/static/css/normalize.css"
+        />
+        <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>RSS Reader Login</h1>
+            </div>
+            {{if .Message}}
             <p class="message">{{.Message}}</p>
-        {{end}}
-        {{if .Error}}
+            {{end}} {{if .Error}}
             <p class="error">{{.Error}}</p>
-        {{end}}
-        <form method="POST">
-            <input type="email" name="email" placeholder="Email" value="{{.Email}}" required>
-            <input type="text" name="otp" placeholder="OTP">
-            <button type="submit">Login</button>
-        </form>
-    </div>
-</body>
+            {{end}}
+            <form method="POST">
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value="{{.Email}}"
+                    required
+                />
+                <input type="text" name="otp" placeholder="OTP" />
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </body>
 </html>

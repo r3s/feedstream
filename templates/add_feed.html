@@ -1,17 +1,34 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>Add Feed</title>
-    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Add Feed</h1>
-        <form method="POST">
-            <input type="text" name="name" placeholder="Feed Name" required>
-            <input type="url" name="url" placeholder="Feed URL" required>
-            <button type="submit">Add Feed</button>
-        </form>
-    </div>
-</body>
+    <head>
+        <title>Add Feed</title>
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/static/css/normalize.css"
+        />
+        <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Add Feed</h1>
+                <div>
+                    <a href="/feeds" class="btn">View Feeds</a>
+                    <a href="/feeds/manage" class="btn">Manage Feeds</a>
+                    <a href="/logout" class="btn">Logout</a>
+                </div>
+            </div>
+            <form method="POST">
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Feed Name"
+                    required
+                />
+                <input type="url" name="url" placeholder="Feed URL" required />
+                <button type="submit">Add Feed</button>
+            </form>
+        </div>
+    </body>
 </html>

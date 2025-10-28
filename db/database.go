@@ -202,7 +202,7 @@ func GetFeedItemsForUser(userID int) ([]models.FeedItem, error) {
 func GetFeedItemsForUserPaginated(userID int, daysOffset int) ([]models.FeedItem, error) {
 	// Calculate date range for pagination
 	endDate := time.Now().AddDate(0, 0, -daysOffset)
-	startDate := endDate.AddDate(0, 0, -10) // 10 days range
+	startDate := endDate.AddDate(0, 0, -60) // 60 days range
 
 	rows, err := DB.Query(`
 		SELECT i.id, i.title, i.description, i.link, f.name,
@@ -235,7 +235,7 @@ func GetFeedItemsForUserPaginated(userID int, daysOffset int) ([]models.FeedItem
 
 // HasMoreFeedItems checks if there are more feed items beyond the current pagination
 func HasMoreFeedItems(userID int, daysOffset int) (bool, error) {
-	checkDate := time.Now().AddDate(0, 0, -(daysOffset + 10))
+	checkDate := time.Now().AddDate(0, 0, -(daysOffset + 60))
 
 	var count int
 	err := DB.QueryRow(`

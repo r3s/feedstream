@@ -185,7 +185,7 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 	pageData := FeedsPageData{
 		DateGroups:  orderedGroups,
 		HasMore:     hasMore,
-		NextOffset:  daysOffset + 10,
+		NextOffset:  daysOffset + 60,
 		CurrentDays: daysOffset,
 	}
 

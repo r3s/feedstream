@@ -1,154 +1,65 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>Manage Feeds</title>
-    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Manage Feeds</h1>
-            <div>
-                <a href="/feeds" class="btn">View Feeds</a>
-                <a href="/feeds/add" class="btn">Add Feed</a>
-                <a href="/logout" class="btn">Logout</a>
+    <head>
+        <title>Manage Feeds</title>
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/static/css/normalize.css"
+        />
+        <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Manage Feeds</h1>
+                <div>
+                    <a href="/feeds" class="btn">View Feeds</a>
+                    <a href="/feeds/add" class="btn">Add Feed</a>
+                    <a href="/logout" class="btn">Logout</a>
+                </div>
             </div>
-        </div>
 
-        {{if .}}
+            {{if .}}
             <div class="feeds-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>URL</th>
-                            <th>Added</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range .}}
-                        <tr>
-                            <td class="feed-name">{{.Name}}</td>
-                            <td class="feed-url">
-                                <a href="{{.URL}}" target="_blank" rel="noopener">{{.URL}}</a>
-                            </td>
-                            <td class="feed-date">{{.CreatedAt.Format "Jan 2, 2006"}}</td>
-                            <td class="feed-actions">
-                                <a href="/feeds/edit/{{.ID}}" class="btn btn-small btn-edit">Edit</a>
-                                <form method="POST" action="/feeds/delete/{{.ID}}" style="display: inline;"
-                                      onsubmit="return confirm('Are you sure you want to delete this feed? This will also delete all its articles.')">
-                                    <button type="submit" class="btn btn-small btn-delete">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
+                {{range .}}
+                <div class="feed-row">
+                    <div class="feed-item-row">
+                        <span class="feed-name">{{.Name}}</span>
+                        <span class="feed-url">
+                            <a href="{{.URL}}" target="_blank" rel="noopener"
+                                >{{.URL}}</a
+                            >
+                        </span>
+                    </div>
+                    <div class="feed-meta">
+                        <span class="feed-date"
+                            >{{.CreatedAt.Format "Jan 2, 2006"}}</span
+                        >
+                        | <a href="/feeds/edit/{{.ID}}" class="btn">edit</a> |
+                        <form
+                            method="POST"
+                            action="/feeds/delete/{{.ID}}"
+                            style="display: inline"
+                            onsubmit="return confirm('Are you sure you want to delete this feed? This will also delete all its articles.')"
+                        >
+                            <button type="submit" class="btn-delete">
+                                delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {{end}}
             </div>
-        {{else}}
+            {{else}}
             <div class="empty-state">
                 <h2>No feeds yet</h2>
-                <p>You haven't added any RSS feeds yet. <a href="/feeds/add">Add your first feed</a> to get started.</p>
+                <p>
+                    You haven't added any RSS feeds yet.
+                    <a href="/feeds/add">Add your first feed</a> to get started.
+                </p>
             </div>
-        {{end}}
-    </div>
-
-    <style>
-        .feeds-table {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            margin-top: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-        }
-
-        tr:hover {
-            background: #f8f9fa;
-        }
-
-        .feed-name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .feed-url {
-            max-width: 300px;
-            word-break: break-all;
-        }
-
-        .feed-url a {
-            color: #007bff;
-            text-decoration: none;
-        }
-
-        .feed-url a:hover {
-            text-decoration: underline;
-        }
-
-        .feed-date {
-            color: #666;
-            white-space: nowrap;
-        }
-
-        .feed-actions {
-            white-space: nowrap;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 0.85em;
-            margin-right: 8px;
-        }
-
-        .btn-edit {
-            background: #28a745;
-        }
-
-        .btn-edit:hover {
-            background: #218838;
-        }
-
-        .btn-delete {
-            background: #dc3545;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn-delete:hover {
-            background: #c82333;
-        }
-
-        @media (max-width: 768px) {
-            .feeds-table {
-                overflow-x: auto;
-            }
-
-            table {
-                min-width: 600px;
-            }
-
-            .feed-url {
-                max-width: 200px;
-            }
-        }
-    </style>
-</body>
+            {{end}}
+        </div>
+    </body>
 </html>
