@@ -155,6 +155,16 @@ func CreateFeed(name, url string, userID int) (*models.Feed, error) {
 	return feed, nil
 }
 
+// FeedExistsForUser checks if a feed with the given URL already exists for a user
+func FeedExistsForUser(userID int, url string) (bool, error) {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM feeds WHERE user_id = $1 AND url = $2", userID, url).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // GetFeedsForUser retrieves all feeds for a user
 func GetFeedsForUser(userID int) ([]models.Feed, error) {
 	rows, err := DB.Query("SELECT id, name, url, user_id, created_at FROM feeds WHERE user_id = $1", userID)

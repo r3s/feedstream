@@ -190,9 +190,13 @@ body {
 
 form {
     margin-top: 20px;
-    background: var(--white-bg);
-    padding: 15px;
-    border: 1px solid var(--border-color);
+}
+
+.import-export-section form {
+    background: none;
+    padding: 0;
+    border: none;
+    margin: 0;
 }
 
 input[type="email"],
@@ -429,4 +433,30 @@ h6 {
 
 .feed-info div {
     margin: 2px 0;
+}
+
+/* Import/Export section */
+.import-export-section {
+    margin: 20px 0;
+}
+
+.import-export-section input[type="file"] {
+    font-size: 8pt;
+    padding: 4px;
+    margin-right: 10px;
+}
+
+.import-export-section button {
+    font-size: 8pt;
+    padding: 4px 8px;
+}
+
+/* Feeds heading */
+h2 {
+    color: var(--text-color);
+    font-size: 12pt;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+    padding: 0 0 8px 0;
+    border-bottom: 1px solid var(--border-lighter);
 }

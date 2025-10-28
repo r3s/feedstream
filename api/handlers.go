@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -416,4 +417,120 @@ func (a *App) DebugHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+}
+
+// ExportFeedsHandler exports user's feeds as JSON
+func (a *App) ExportFeedsHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.Store.Get(r, "session")
+	userID := session.Values["user_id"].(int)
+
+	feeds, err := db.GetFeedsForUser(userID)
+	if err != nil {
+		http.Error(w, "Error getting feeds", http.StatusInternalServerError)
+		return
+	}
+
+	// Create export structure
+	exportData := struct {
+		Feeds []struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"feeds"`
+	}{}
+
+	for _, feed := range feeds {
+		exportData.Feeds = append(exportData.Feeds, struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		}{
+			Name: feed.Name,
+			URL:  feed.URL,
+		})
+	}
+
+	// Set headers for file download
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=feedstream-feeds.json")
+
+	// Encode and send JSON
+	if err := json.NewEncoder(w).Encode(exportData); err != nil {
+		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
+		return
+	}
+}
+
+// ImportFeedsHandler imports feeds from JSON
+func (a *App) ImportFeedsHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.Store.Get(r, "session")
+	userID := session.Values["user_id"].(int)
+
+	var importData struct {
+		Feeds []struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"feeds"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&importData); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Invalid JSON format",
+		})
+		return
+	}
+
+	successCount := 0
+	errorCount := 0
+	var errors []string
+
+	for _, feedData := range importData.Feeds {
+		if feedData.Name == "" || feedData.URL == "" {
+			errorCount++
+			errors = append(errors, "Feed missing name or URL")
+			continue
+		}
+
+		// Check if feed already exists
+		exists, err := db.FeedExistsForUser(userID, feedData.URL)
+		if err != nil {
+			errorCount++
+			errors = append(errors, fmt.Sprintf("Error checking feed %s: %v", feedData.Name, err))
+			continue
+		}
+
+		if exists {
+			errorCount++
+			errors = append(errors, fmt.Sprintf("Feed already exists: %s", feedData.Name))
+			continue
+		}
+
+		// Add the feed
+		_, err = db.CreateFeed(feedData.Name, feedData.URL, userID)
+		if err != nil {
+			errorCount++
+			errors = append(errors, fmt.Sprintf("Error creating feed %s: %v", feedData.Name, err))
+			continue
+		}
+
+		successCount++
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"success":      successCount > 0,
+		"imported":     successCount,
+		"errors":       errorCount,
+		"errorDetails": errors,
+	}
+
+	if successCount > 0 && errorCount > 0 {
+		response["message"] = fmt.Sprintf("Imported %d feeds with %d errors", successCount, errorCount)
+	} else if successCount > 0 {
+		response["message"] = fmt.Sprintf("Successfully imported %d feeds", successCount)
+	} else {
+		response["error"] = "No feeds were imported"
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
