@@ -1,8 +1,12 @@
 <!doctype html>
 <html>
     <head>
-        <title>Feeds</title>
-        <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
+        <title>FeedStream - Feeds</title>
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/static/css/normalize.css"
+        />
         <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
     </head>
     <body>
@@ -17,43 +21,56 @@
                 </div>
             </div>
             <div id="feed-content">
-                {{if .DateGroups}}
-                {{range .DateGroups}}
+                {{if .DateGroups}} {{range .DateGroups}}
                 <div class="date-section">
                     <h2 class="date-header">{{.Date}}</h2>
                     <div class="feed-items-grid">
                         {{range .Items}}
                         <div class="feed-item {{if .IsNew}}new{{end}}">
                             <h3>
-                                <a href="{{.Link}}" target="_blank" rel="noopener">{{.Title}}</a>
+                                <a
+                                    href="{{.Link}}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >{{.Title}}</a
+                                >
                             </h3>
                             {{if .Description}}
                             <div class="feed-description">{{.Description}}</div>
                             {{end}}
                             <div class="item-meta">
                                 <span class="feed-name">{{.FeedName}}</span> |
-                                <span class="publish-date">{{.PublishedAt.Format "Jan 2, 2006 3:04 PM"}}</span>
+                                <span class="publish-date"
+                                    >{{.PublishedAt.Format "Jan 2, 2006 3:04 PM"}}</span
+                                >
                             </div>
                         </div>
                         {{end}}
                     </div>
                 </div>
-                {{end}}
-                {{if .HasMore}}
+                {{end}} {{if .HasMore}}
                 <div class="load-more-section">
-                    <button id="load-more-btn" class="btn load-more-btn" data-next-offset="{{.NextOffset}}">
+                    <button
+                        id="load-more-btn"
+                        class="btn load-more-btn"
+                        data-next-offset="{{.NextOffset}}"
+                    >
                         Load More (Next 60 Days)
                     </button>
-                    <div id="loading" class="loading-indicator" style="display: none">
+                    <div
+                        id="loading"
+                        class="loading-indicator"
+                        style="display: none"
+                    >
                         Loading more articles...
                     </div>
                 </div>
-                {{end}}
-                {{else}}
+                {{end}} {{else}}
                 <div class="empty-state">
                     <h2>No feed items yet</h2>
                     <p>
-                        Start by <a href="/feeds/add">adding some RSS feeds</a> and then
+                        Start by
+                        <a href="/feeds/add">adding some RSS feeds</a> and then
                         refresh to see the latest articles.
                     </p>
                 </div>
@@ -62,13 +79,15 @@
 
             <script>
                 document.addEventListener("DOMContentLoaded", function () {
-                    const loadMoreBtn = document.getElementById("load-more-btn");
+                    const loadMoreBtn =
+                        document.getElementById("load-more-btn");
                     const loading = document.getElementById("loading");
                     const feedContent = document.getElementById("feed-content");
 
                     if (loadMoreBtn) {
                         loadMoreBtn.addEventListener("click", function () {
-                            const nextOffset = this.getAttribute("data-next-offset");
+                            const nextOffset =
+                                this.getAttribute("data-next-offset");
 
                             // Show loading indicator
                             this.style.display = "none";
@@ -80,27 +99,53 @@
                                 .then((html) => {
                                     // Parse the response to extract new content
                                     const parser = new DOMParser();
-                                    const doc = parser.parseFromString(html, "text/html");
-                                    const newContent = doc.querySelector("#feed-content");
+                                    const doc = parser.parseFromString(
+                                        html,
+                                        "text/html",
+                                    );
+                                    const newContent =
+                                        doc.querySelector("#feed-content");
 
                                     if (newContent) {
                                         // Extract date sections (skip load more button area)
-                                        const dateSections = newContent.querySelectorAll(".date-section");
-                                        const newLoadMoreSection = newContent.querySelector(".load-more-section");
+                                        const dateSections =
+                                            newContent.querySelectorAll(
+                                                ".date-section",
+                                            );
+                                        const newLoadMoreSection =
+                                            newContent.querySelector(
+                                                ".load-more-section",
+                                            );
 
                                         // Append new date sections
                                         dateSections.forEach((section) => {
-                                            feedContent.insertBefore(section, document.querySelector(".load-more-section"));
+                                            feedContent.insertBefore(
+                                                section,
+                                                document.querySelector(
+                                                    ".load-more-section",
+                                                ),
+                                            );
                                         });
 
                                         // Update or remove load more button
-                                        const currentLoadMoreSection = document.querySelector(".load-more-section");
+                                        const currentLoadMoreSection =
+                                            document.querySelector(
+                                                ".load-more-section",
+                                            );
                                         if (newLoadMoreSection) {
-                                            currentLoadMoreSection.replaceWith(newLoadMoreSection);
+                                            currentLoadMoreSection.replaceWith(
+                                                newLoadMoreSection,
+                                            );
                                             // Re-attach event listener to new button
-                                            const newBtn = document.getElementById("load-more-btn");
+                                            const newBtn =
+                                                document.getElementById(
+                                                    "load-more-btn",
+                                                );
                                             if (newBtn) {
-                                                newBtn.addEventListener("click", arguments.callee);
+                                                newBtn.addEventListener(
+                                                    "click",
+                                                    arguments.callee,
+                                                );
                                             }
                                         } else {
                                             currentLoadMoreSection.remove();
@@ -108,10 +153,14 @@
                                     }
                                 })
                                 .catch((error) => {
-                                    console.error("Error loading more items:", error);
+                                    console.error(
+                                        "Error loading more items:",
+                                        error,
+                                    );
                                     loading.style.display = "none";
                                     loadMoreBtn.style.display = "block";
-                                    loadMoreBtn.textContent = "Error - Try Again";
+                                    loadMoreBtn.textContent =
+                                        "Error - Try Again";
                                 });
                         });
                     }
