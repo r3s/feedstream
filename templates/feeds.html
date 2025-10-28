@@ -22,13 +22,25 @@
                     <a href="/logout" class="btn">Logout</a>
                 </div>
             </div>
+            
+            <!-- Feed Filter -->
+            <div class="filter-section">
+                <label for="feed-filter">Filter by feed:</label>
+                <select id="feed-filter">
+                    <option value="all">All</option>
+                    {{range .FeedNames}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
+            </div>
+            
             <div id="feed-content">
                 {{if .DateGroups}} {{range .DateGroups}}
                 <div class="date-section">
                     <h2 class="date-header">{{.Date}}</h2>
                     <div class="feed-items-grid">
                         {{range .Items}}
-                        <div class="feed-item {{if .IsNew}}new{{end}}">
+                        <div class="feed-item {{if .IsNew}}new{{end}}" data-feed-name="{{.FeedName}}">
                             <h3>
                                 <a
                                     href="{{.Link}}"
@@ -112,6 +124,32 @@
 
                 // Initialize theme toggle
                 initThemeToggle();
+
+                // Feed filter functionality
+                document.getElementById('feed-filter').addEventListener('change', function() {
+                    const selectedFeed = this.value;
+                    const feedItems = document.querySelectorAll('.feed-item');
+                    const dateSections = document.querySelectorAll('.date-section');
+                    
+                    feedItems.forEach(item => {
+                        const feedName = item.getAttribute('data-feed-name');
+                        if (selectedFeed === 'all' || feedName === selectedFeed) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Hide/show date sections based on whether they have visible items
+                    dateSections.forEach(section => {
+                        const visibleItems = section.querySelectorAll('.feed-item:not([style*="display: none"])');
+                        if (selectedFeed === 'all' || visibleItems.length > 0) {
+                            section.style.display = '';
+                        } else {
+                            section.style.display = 'none';
+                        }
+                    });
+                });
 
                 document.addEventListener("DOMContentLoaded", function () {
                     const loadMoreBtn =

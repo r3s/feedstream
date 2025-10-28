@@ -140,6 +140,18 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		hasMore = false
 	}
 
+	// Collect unique feed names for filter
+	feedNamesMap := make(map[string]bool)
+	for _, item := range items {
+		feedNamesMap[item.FeedName] = true
+	}
+	
+	var feedNames []string
+	for feedName := range feedNamesMap {
+		feedNames = append(feedNames, feedName)
+	}
+	sort.Strings(feedNames)
+
 	// Group items by date using improved date formatting
 	groupedItems := make(map[string][]models.FeedItem)
 	dateDisplayMap := make(map[string]string) // Maps grouping key to display string
@@ -175,6 +187,7 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		HasMore     bool
 		NextOffset  int
 		CurrentDays int
+		FeedNames   []string
 	}
 
 	var orderedGroups []DateGroup
@@ -188,6 +201,7 @@ func (a *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		HasMore:     hasMore,
 		NextOffset:  daysOffset + 60,
 		CurrentDays: daysOffset,
+		FeedNames:   feedNames,
 	}
 
 	// Mark items as old after fetching
