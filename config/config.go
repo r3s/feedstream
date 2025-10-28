@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"log"
 	"net/url"
 	"os"
@@ -9,7 +11,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds the application configuration
 type Config struct {
 	DatabaseURL   string
 	DBHost        string
@@ -21,29 +22,56 @@ type Config struct {
 	EmailFrom     string
 	ResendAPIKey  string
 	SessionSecret string
+	CSRFSecret    string
+	Environment   string
+	AppURL        string
 }
 
-// Load loads the configuration from environment variables
 func Load() *Config {
-	// Try to load .env file for local development
-	// In production, this will fail silently which is expected
 	if err := godotenv.Load(); err != nil {
-		// Only log in development - check if we're likely in dev environment
 		if _, exists := os.Stat(".env"); exists == nil {
 			log.Println("Warning: .env file exists but couldn't be loaded:", err)
 		}
-		// In production, this is normal and expected
+	}
+
+	environment := getEnv("ENVIRONMENT", "development")
+	sessionSecret := getEnv("SESSION_SECRET", "")
+	csrfSecret := getEnv("CSRF_SECRET", "")
+
+	if sessionSecret == "" {
+		sessionSecret = generateRandomSecret("SESSION_SECRET")
+	}
+	if csrfSecret == "" {
+		csrfSecret = generateRandomSecret("CSRF_SECRET")
+	}
+
+	appPort := getEnv("APP_PORT", "8080")
+	appURL := getEnv("APP_URL", "")
+	
+	if appURL == "" {
+		if environment == "production" {
+			log.Println("Warning: APP_URL not set in production, CSRF origin validation may fail")
+		} else {
+			appURL = "http://localhost:" + appPort
+		}
 	}
 
 	cfg := &Config{
 		DatabaseURL:   getEnv("DATABASE_URL", ""),
-		AppPort:       getEnv("APP_PORT", "8080"),
+		AppPort:       appPort,
 		EmailFrom:     getEnv("EMAIL_FROM", ""),
 		ResendAPIKey:  getEnv("RESEND_API_KEY", ""),
-		SessionSecret: getEnv("SESSION_SECRET", generateRandomSecret()),
+		SessionSecret: sessionSecret,
+		CSRFSecret:    csrfSecret,
+		Environment:   environment,
+		AppURL:        appURL,
 	}
 
-	// Parse DATABASE_URL if provided, otherwise use individual DB vars
+	log.Printf("Configuration loaded:")
+	log.Printf("  Environment: %s", cfg.Environment)
+	log.Printf("  APP_PORT: %s", cfg.AppPort)
+	log.Printf("  APP_URL: %s", cfg.AppURL)
+
 	if cfg.DatabaseURL != "" {
 		cfg.parseDBURL()
 	} else {
@@ -64,7 +92,6 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// parseDBURL parses DATABASE_URL and sets individual DB config fields
 func (c *Config) parseDBURL() {
 	u, err := url.Parse(c.DatabaseURL)
 	if err != nil {
@@ -86,10 +113,21 @@ func (c *Config) parseDBURL() {
 	c.DBName = strings.TrimPrefix(u.Path, "/")
 }
 
-// generateRandomSecret generates a random session secret if none is provided
-func generateRandomSecret() string {
-	// In production, you should always set SESSION_SECRET environment variable
-	// This is just a fallback that will generate a new secret each restart
-	log.Println("Warning: SESSION_SECRET not set, using auto-generated secret (sessions will not persist across restarts)")
-	return "auto-generated-secret-change-me-in-production"
+func generateRandomSecret(name string) string {
+	log.Printf("Warning: %s not set, generating random secret (will not persist across restarts)", name)
+	
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		log.Fatalf("Failed to generate random secret for %s: %v", name, err)
+	}
+	
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func (c *Config) IsProduction() bool {
+	return c.Environment == "production"
+}
+
+func (c *Config) IsDevelopment() bool {
+	return c.Environment == "development"
 }

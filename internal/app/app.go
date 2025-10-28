@@ -13,16 +13,17 @@ import (
 	"rss-reader/pkg/email"
 	"rss-reader/pkg/security"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 )
 
 type Application struct {
-	Router       *mux.Router
-	Config       *config.Config
-	DBManager    *database.Manager
-	AuthHandler  *handler.AuthHandler
-	FeedHandler  *handler.FeedHandler
+	Router         *mux.Router
+	Config         *config.Config
+	DBManager      *database.Manager
+	AuthHandler    *handler.AuthHandler
+	FeedHandler    *handler.FeedHandler
 	AuthMiddleware *middleware.AuthMiddleware
 }
 
@@ -55,7 +56,16 @@ func New(cfg *config.Config) (*Application, error) {
 	}
 	authService := service.NewAuthService(userRepo, otpRepo, emailService, otpGenerator)
 	feedService := service.NewFeedService(feedRepo, feedItemRepo, dateFormatter)
+
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionSecret))
+	sessionStore.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 7,
+		HttpOnly: true,
+		Secure:   cfg.IsProduction(),
+		SameSite: http.SameSiteLaxMode,
+	}
+
 	authMiddleware := middleware.NewAuthMiddleware(sessionStore)
 	authHandler := handler.NewAuthHandler(authService, authMiddleware)
 	feedHandler := handler.NewFeedHandler(feedService, authMiddleware)
@@ -70,9 +80,51 @@ func New(cfg *config.Config) (*Application, error) {
 		AuthMiddleware: authMiddleware,
 	}
 
+	app.setupMiddleware()
 	app.setupRoutes()
 
 	return app, nil
+}
+
+func (a *Application) setupMiddleware() {
+	a.Router.Use(securityHeadersMiddleware(a.Config.IsProduction()))
+
+	if a.Config.IsProduction() {
+		log.Printf("CSRF Configuration - Production mode enabled")
+		csrfOptions := []csrf.Option{
+			csrf.Secure(true),
+			csrf.HttpOnly(true),
+			csrf.Path("/"),
+			csrf.SameSite(csrf.SameSiteLaxMode),
+		}
+		if a.Config.AppURL != "" {
+			csrfOptions = append(csrfOptions, csrf.TrustedOrigins([]string{a.Config.AppURL}))
+			log.Printf("CSRF Configuration - Trusted Origin: %s", a.Config.AppURL)
+		}
+		csrfMiddleware := csrf.Protect([]byte(a.Config.CSRFSecret), csrfOptions...)
+		a.Router.Use(csrfMiddleware)
+	} else {
+		log.Printf("CSRF Configuration - Disabled in development mode")
+	}
+}
+
+func securityHeadersMiddleware(isProduction bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Frame-Options", "DENY")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-XSS-Protection", "1; mode=block")
+			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			
+			if isProduction {
+				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
+			} else {
+				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
+			}
+			
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func (a *Application) setupRoutes() {

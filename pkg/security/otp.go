@@ -12,17 +12,19 @@ func NewOTPGenerator() *OTPGenerator {
 }
 
 func (g *OTPGenerator) Generate() (string, error) {
-	b := make([]byte, 4)
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const otpLength = 10
+	
+	b := make([]byte, otpLength)
 	_, err := rand.Read(b)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random bytes: %w", err)
 	}
 	
-	num := int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
-	if num < 0 {
-		num = -num
+	otp := make([]byte, otpLength)
+	for i := 0; i < otpLength; i++ {
+		otp[i] = charset[int(b[i])%len(charset)]
 	}
 	
-	otp := 100000 + (num % 900000)
-	return fmt.Sprintf("%06d", otp), nil
+	return string(otp), nil
 }

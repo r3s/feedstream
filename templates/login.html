@@ -3,7 +3,6 @@
     <head>
         <title>FeedStream - Login</title>
         <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-        <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
         <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
     </head>
     <body>
@@ -21,6 +20,7 @@
             <p class="error">{{.Error}}</p>
             {{end}}
             <form method="POST">
+                {{ .csrfField }}
                 <input type="email" name="email" placeholder="Email" value="{{.Email}}" required />
                 <input type="text" name="otp" placeholder="OTP" />
                 <button type="submit">Login</button>

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 )
 
@@ -71,7 +72,7 @@ func (h *FeedHandler) ViewFeeds(w http.ResponseWriter, r *http.Request) {
 
 func (h *FeedHandler) AddFeed(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		h.showAddFeedPage(w)
+		h.showAddFeedPage(w, r)
 		return
 	}
 
@@ -83,13 +84,18 @@ func (h *FeedHandler) AddFeed(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-func (h *FeedHandler) showAddFeedPage(w http.ResponseWriter) {
+func (h *FeedHandler) showAddFeedPage(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("templates/add_feed.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, nil)
+	
+	data := map[string]interface{}{
+		"csrfField": csrf.TemplateField(r),
+	}
+	
+	tmpl.Execute(w, data)
 }
 
 func (h *FeedHandler) handleAddFeedPost(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +160,21 @@ func (h *FeedHandler) ManageFeeds(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, feeds)
+	
+	data := map[string]interface{}{
+		"Feeds": feeds,
+	}
+	
+	// Only add CSRF field if middleware is enabled (production)
+	if csrfToken := csrf.Token(r); csrfToken != "" {
+		data["csrfField"] = csrf.TemplateField(r)
+	}
+	
+	if err := tmpl.Execute(w, data); err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Error rendering page", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *FeedHandler) EditFeed(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +192,7 @@ func (h *FeedHandler) EditFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		h.showEditFeedPage(w, feedID, userID)
+		h.showEditFeedPage(w, r, feedID, userID)
 		return
 	}
 
@@ -184,7 +204,7 @@ func (h *FeedHandler) EditFeed(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-func (h *FeedHandler) showEditFeedPage(w http.ResponseWriter, feedID, userID int) {
+func (h *FeedHandler) showEditFeedPage(w http.ResponseWriter, r *http.Request, feedID, userID int) {
 	feed, err := h.feedService.GetFeedByID(feedID, userID)
 	if err != nil {
 		log.Printf("Error getting feed: %v", err)
@@ -197,7 +217,15 @@ func (h *FeedHandler) showEditFeedPage(w http.ResponseWriter, feedID, userID int
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, feed)
+
+	data := map[string]interface{}{
+		"ID":        feed.ID,
+		"Name":      feed.Name,
+		"URL":       feed.URL,
+		"csrfField": csrf.TemplateField(r),
+	}
+
+	tmpl.Execute(w, data)
 }
 
 func (h *FeedHandler) handleEditFeedPost(w http.ResponseWriter, r *http.Request, feedID, userID int) {

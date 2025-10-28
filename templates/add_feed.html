@@ -3,13 +3,12 @@
     <head>
         <title>FeedStream - Add Feed</title>
         <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-        <link rel="stylesheet" type="text/css" href="/static/css/normalize.css" />
         <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1>FeedStream - Add Feed</h1>
+                <h1><a href="/feeds" style="text-decoration: none; color: inherit;">FeedStream</a> - Add Feed</h1>
                 <div>
                     <a href="/feeds" class="btn">View Feeds</a>
                     <a href="/feeds/manage" class="btn">Manage Feeds</a>
@@ -18,6 +17,7 @@
                 </div>
             </div>
             <form method="POST">
+                {{ .csrfField }}
                 <input type="text" name="name" placeholder="Feed Name" required />
                 <input type="url" name="url" placeholder="Feed URL" required />
                 <button type="submit">Add Feed</button>

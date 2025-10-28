@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"rss-reader/internal/middleware"
 	"rss-reader/internal/service"
+
+	"github.com/gorilla/csrf"
 )
 
 type AuthHandler struct {
@@ -22,7 +24,7 @@ func NewAuthHandler(authService *service.AuthService, authMw *middleware.AuthMid
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		h.showLoginPage(w, nil)
+		h.showLoginPage(w, r, nil)
 		return
 	}
 
@@ -34,13 +36,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-func (h *AuthHandler) showLoginPage(w http.ResponseWriter, data map[string]string) {
+func (h *AuthHandler) showLoginPage(w http.ResponseWriter, r *http.Request, data map[string]string) {
 	tmpl, err := template.ParseFiles("templates/login.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, data)
+
+	if data == nil {
+		data = make(map[string]string)
+	}
+	
+	templateData := map[string]interface{}{
+		"Email":     data["Email"],
+		"Message":   data["Message"],
+		"Error":     data["Error"],
+		"csrfField": csrf.TemplateField(r),
+	}
+
+	tmpl.Execute(w, templateData)
 }
 
 func (h *AuthHandler) handleLoginPost(w http.ResponseWriter, r *http.Request) {
@@ -63,14 +77,14 @@ func (h *AuthHandler) handleSendOTP(w http.ResponseWriter, r *http.Request, emai
 	err := h.authService.SendOTP(email)
 	if err != nil {
 		log.Printf("Error sending OTP to %s: %v", email, err)
-		h.showLoginPage(w, map[string]string{
+		h.showLoginPage(w, r, map[string]string{
 			"Email": email,
 			"Error": "Failed to send OTP. Please try again.",
 		})
 		return
 	}
 
-	h.showLoginPage(w, map[string]string{
+	h.showLoginPage(w, r, map[string]string{
 		"Email":   email,
 		"Message": "An OTP has been sent to your email.",
 	})
@@ -80,7 +94,7 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request, em
 	user, err := h.authService.VerifyOTP(email, otp)
 	if err != nil {
 		log.Printf("OTP verification failed for %s: %v", email, err)
-		h.showLoginPage(w, map[string]string{
+		h.showLoginPage(w, r, map[string]string{
 			"Email": email,
 			"Error": "Invalid or expired OTP. Please try again.",
 		})

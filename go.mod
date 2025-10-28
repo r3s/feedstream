@@ -3,6 +3,7 @@ module rss-reader
 go 1.23
 
 require (
+	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/sessions v1.4.0
 	github.com/joho/godotenv v1.5.1

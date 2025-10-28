@@ -85,6 +85,17 @@ func (m *Manager) runMigrations() error {
 			expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1 FROM information_schema.table_constraints 
+				WHERE constraint_name = 'feed_items_feed_id_fkey'
+			) THEN
+				ALTER TABLE feed_items DROP CONSTRAINT feed_items_feed_id_fkey;
+				ALTER TABLE feed_items ADD CONSTRAINT feed_items_feed_id_fkey 
+					FOREIGN KEY (feed_id) REFERENCES feeds(id) ON DELETE CASCADE;
+			END IF;
+		END $$`,
 		`CREATE INDEX IF NOT EXISTS idx_feed_items_feed_id ON feed_items(feed_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_feed_items_published_at ON feed_items(published_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_feeds_user_id ON feeds(user_id)`,
