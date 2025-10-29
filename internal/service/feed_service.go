@@ -7,14 +7,18 @@ import (
 	"rss-reader/internal/repository"
 	"rss-reader/pkg/datetime"
 	"sort"
+	"sync"
+	"time"
 
 	"github.com/mmcdole/gofeed"
 )
 
 type FeedService struct {
-	feedRepo     repository.FeedRepository
-	feedItemRepo repository.FeedItemRepository
+	feedRepo      repository.FeedRepository
+	feedItemRepo  repository.FeedItemRepository
 	dateFormatter *datetime.Formatter
+	lastCleanup   time.Time
+	cleanupMu     sync.Mutex
 }
 
 func NewFeedService(
@@ -97,6 +101,22 @@ func (s *FeedService) DeleteFeed(feedID, userID int) error {
 }
 
 func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
+	s.cleanupMu.Lock()
+	shouldCleanup := time.Since(s.lastCleanup) > 24*time.Hour
+	if shouldCleanup {
+		s.lastCleanup = time.Now()
+	}
+	s.cleanupMu.Unlock()
+
+	if shouldCleanup {
+		deleted, err := s.feedItemRepo.DeleteOlderThan(90)
+		if err != nil {
+			log.Printf("Warning: cleanup failed: %v", err)
+		} else if deleted > 0 {
+			log.Printf("Cleaned up %d old feed items (90+ days)", deleted)
+		}
+	}
+
 	feeds, err := s.feedRepo.GetAllByUserID(userID)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get feeds: %w", err)

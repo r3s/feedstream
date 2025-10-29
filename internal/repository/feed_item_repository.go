@@ -13,6 +13,7 @@ type FeedItemRepository interface {
 	GetByUserIDPaginated(userID int, daysOffset int) ([]domain.FeedItem, error)
 	HasMoreItems(userID int, daysOffset int) (bool, error)
 	MarkAllAsOld(userID int) error
+	DeleteOlderThan(days int) (int64, error)
 }
 
 type feedItemRepository struct {
@@ -125,6 +126,22 @@ func (r *feedItemRepository) MarkAllAsOld(userID int) error {
 	}
 
 	return nil
+}
+
+func (r *feedItemRepository) DeleteOlderThan(days int) (int64, error) {
+	cutoffDate := time.Now().AddDate(0, 0, -days)
+
+	result, err := r.db.Exec(`
+		DELETE FROM feed_items 
+		WHERE published_at < $1
+	`, cutoffDate)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete old feed items: %w", err)
+	}
+
+	rowsDeleted, _ := result.RowsAffected()
+	return rowsDeleted, nil
 }
 
 func isDuplicateError(err error) bool {

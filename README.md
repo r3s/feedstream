@@ -8,6 +8,8 @@ A minimal RSS feed reader web application built with Go. Everything is vibe code
 - **Feed Management** - Add, edit, delete, and organize RSS feeds
 - **Import/Export** - Backup and restore feeds as JSON
 - **Email and OTP based authentication** - Passwordless login using [Resend](https://resend.com/)
+- **Auto-refresh** - Feeds are automatically refreshed when viewing
+- **Data retention** - Feed items are stored for 90 days with automatic cleanup
 
 ## Environment Variables
 

@@ -41,6 +41,16 @@ func (h *FeedHandler) ViewFeeds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Refresh feeds when viewing the page
+	if daysOffset == 0 {
+		totalItems, newItems, err := h.feedService.RefreshFeeds(userID)
+		if err != nil {
+			log.Printf("Error refreshing feeds: %v", err)
+		} else {
+			log.Printf("Auto-refreshed feeds for user %d: %d total, %d new", userID, totalItems, newItems)
+		}
+	}
+
 	dateGroups, hasMore, feedNames, err := h.feedService.GetFeedItemsGroupedByDate(userID, daysOffset)
 	if err != nil {
 		log.Printf("Error getting feed items: %v", err)
