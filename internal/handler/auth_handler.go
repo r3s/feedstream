@@ -11,21 +11,21 @@ import (
 )
 
 type AuthHandler struct {
-	authService   *service.AuthService
-	authMw        *middleware.AuthMiddleware
-	loginTemplate *template.Template
+	authService     *service.AuthService
+	authMiddleware  *middleware.AuthMiddleware
+	loginTemplate   *template.Template
 }
 
-func NewAuthHandler(authService *service.AuthService, authMw *middleware.AuthMiddleware) *AuthHandler {
-	tmpl, err := template.ParseFiles("templates/login.html")
+func NewAuthHandler(authService *service.AuthService, authMiddleware *middleware.AuthMiddleware) *AuthHandler {
+	loginTemplate, err := template.ParseFiles("templates/login.html")
 	if err != nil {
 		log.Fatalf("Failed to parse login template: %v", err)
 	}
 
 	return &AuthHandler{
-		authService:   authService,
-		authMw:        authMw,
-		loginTemplate: tmpl,
+		authService:    authService,
+		authMiddleware: authMiddleware,
+		loginTemplate:  loginTemplate,
 	}
 }
 
@@ -102,7 +102,7 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request, em
 		return
 	}
 
-	if err := h.authMw.SetUserSession(w, r, user.ID); err != nil {
+	if err := h.authMiddleware.SetUserSession(w, r, user.ID); err != nil {
 		log.Printf("Failed to set session for user %d: %v", user.ID, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -113,7 +113,7 @@ func (h *AuthHandler) handleVerifyOTP(w http.ResponseWriter, r *http.Request, em
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	if err := h.authMw.ClearSession(w, r); err != nil {
+	if err := h.authMiddleware.ClearSession(w, r); err != nil {
 		log.Printf("Error clearing session: %v", err)
 	}
 	http.Redirect(w, r, "/login", http.StatusFound)

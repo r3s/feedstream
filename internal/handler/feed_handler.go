@@ -17,14 +17,14 @@ import (
 
 type FeedHandler struct {
 	feedService         *service.FeedService
-	authMw              *middleware.AuthMiddleware
+	authMiddleware      *middleware.AuthMiddleware
 	feedsTemplate       *template.Template
 	addFeedTemplate     *template.Template
 	manageFeedsTemplate *template.Template
 	editFeedTemplate    *template.Template
 }
 
-func NewFeedHandler(feedService *service.FeedService, authMw *middleware.AuthMiddleware) *FeedHandler {
+func NewFeedHandler(feedService *service.FeedService, authMiddleware *middleware.AuthMiddleware) *FeedHandler {
 	feedsTemplate, err := template.ParseFiles("templates/feeds.html")
 	if err != nil {
 		log.Fatalf("Failed to parse feeds template: %v", err)
@@ -47,7 +47,7 @@ func NewFeedHandler(feedService *service.FeedService, authMw *middleware.AuthMid
 
 	return &FeedHandler{
 		feedService:         feedService,
-		authMw:              authMw,
+		authMiddleware:      authMiddleware,
 		feedsTemplate:       feedsTemplate,
 		addFeedTemplate:     addFeedTemplate,
 		manageFeedsTemplate: manageFeedsTemplate,
@@ -56,7 +56,7 @@ func NewFeedHandler(feedService *service.FeedService, authMw *middleware.AuthMid
 }
 
 func (h *FeedHandler) ViewFeeds(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -126,7 +126,7 @@ func (h *FeedHandler) showAddFeedPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) handleAddFeedPost(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -151,7 +151,7 @@ func (h *FeedHandler) handleAddFeedPost(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *FeedHandler) RefreshFeeds(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -169,7 +169,7 @@ func (h *FeedHandler) RefreshFeeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) ManageFeeds(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -198,7 +198,7 @@ func (h *FeedHandler) ManageFeeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) EditFeed(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -262,7 +262,7 @@ func (h *FeedHandler) handleEditFeedPost(w http.ResponseWriter, r *http.Request,
 }
 
 func (h *FeedHandler) DeleteFeed(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -286,7 +286,7 @@ func (h *FeedHandler) DeleteFeed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) ExportFeeds(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -326,7 +326,7 @@ func (h *FeedHandler) ExportFeeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) ImportFeeds(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -375,7 +375,7 @@ func (h *FeedHandler) ImportFeeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) Debug(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.authMw.GetUserID(r)
+	userID, ok := h.authMiddleware.GetUserID(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return

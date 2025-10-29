@@ -43,10 +43,10 @@ func New(cfg *config.Config) (*Application, error) {
 	}
 
 	db := dbManager.GetDB()
-	userRepo := repository.NewUserRepository(db)
-	otpRepo := repository.NewOTPRepository(db)
-	feedRepo := repository.NewFeedRepository(db)
-	feedItemRepo := repository.NewFeedItemRepository(db)
+	userRepository := repository.NewUserRepository(db)
+	otpRepository := repository.NewOTPRepository(db)
+	feedRepository := repository.NewFeedRepository(db)
+	feedItemRepository := repository.NewFeedItemRepository(db)
 	otpGenerator := security.NewOTPGenerator()
 	dateFormatter := datetime.NewFormatter()
 	emailService, err := email.NewResendService(cfg.ResendAPIKey, cfg.EmailFrom)
@@ -54,8 +54,8 @@ func New(cfg *config.Config) (*Application, error) {
 		log.Printf("Warning: Email service initialization failed: %v", err)
 		log.Println("Authentication will not work without email service")
 	}
-	authService := service.NewAuthService(userRepo, otpRepo, emailService, otpGenerator)
-	feedService := service.NewFeedService(feedRepo, feedItemRepo, dateFormatter)
+	authService := service.NewAuthService(userRepository, otpRepository, emailService, otpGenerator)
+	feedService := service.NewFeedService(feedRepository, feedItemRepository, dateFormatter)
 
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	sessionStore.Options = &sessions.Options{

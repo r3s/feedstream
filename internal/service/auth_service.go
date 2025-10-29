@@ -12,27 +12,27 @@ import (
 )
 
 type AuthService struct {
-	userRepo      repository.UserRepository
-	otpRepo       repository.OTPRepository
-	emailService  email.Service
-	otpGenerator  *security.OTPGenerator
-	sendLimiter   *ratelimit.Limiter
-	verifyLimiter *ratelimit.Limiter
+	userRepository repository.UserRepository
+	otpRepository  repository.OTPRepository
+	emailService   email.Service
+	otpGenerator   *security.OTPGenerator
+	sendLimiter    *ratelimit.Limiter
+	verifyLimiter  *ratelimit.Limiter
 }
 
 func NewAuthService(
-	userRepo repository.UserRepository,
-	otpRepo repository.OTPRepository,
+	userRepository repository.UserRepository,
+	otpRepository repository.OTPRepository,
 	emailService email.Service,
 	otpGenerator *security.OTPGenerator,
 ) *AuthService {
 	return &AuthService{
-		userRepo:      userRepo,
-		otpRepo:       otpRepo,
-		emailService:  emailService,
-		otpGenerator:  otpGenerator,
-		sendLimiter:   ratelimit.NewLimiter(),
-		verifyLimiter: ratelimit.NewLimiter(),
+		userRepository: userRepository,
+		otpRepository:  otpRepository,
+		emailService:   emailService,
+		otpGenerator:   otpGenerator,
+		sendLimiter:    ratelimit.NewLimiter(),
+		verifyLimiter:  ratelimit.NewLimiter(),
 	}
 }
 
@@ -42,10 +42,10 @@ func (s *AuthService) SendOTP(email string) error {
 		return fmt.Errorf("too many OTP requests, please try again in 15 minutes")
 	}
 
-	_, err := s.userRepo.GetByEmail(email)
+	_, err := s.userRepository.GetByEmail(email)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
-			_, err = s.userRepo.Create(email)
+			_, err = s.userRepository.Create(email)
 			if err != nil {
 				return fmt.Errorf("failed to create user: %w", err)
 			}
@@ -60,12 +60,12 @@ func (s *AuthService) SendOTP(email string) error {
 		return fmt.Errorf("failed to generate OTP: %w", err)
 	}
 
-	if err := s.otpRepo.DeleteByEmail(email); err != nil {
+	if err := s.otpRepository.DeleteByEmail(email); err != nil {
 		log.Printf("Warning: failed to delete old OTPs for %s: %v", email, err)
 	}
 
 	expiresAt := time.Now().Add(10 * time.Minute)
-	if err := s.otpRepo.Store(email, otp, expiresAt); err != nil {
+	if err := s.otpRepository.Store(email, otp, expiresAt); err != nil {
 		return fmt.Errorf("failed to store OTP: %w", err)
 	}
 
@@ -94,7 +94,7 @@ func (s *AuthService) VerifyOTP(email, otpCode string) (*domain.User, error) {
 		return nil, fmt.Errorf("too many verification attempts, please wait 15 minutes and request a new OTP")
 	}
 
-	storedOTP, err := s.otpRepo.GetLatestByEmail(email)
+	storedOTP, err := s.otpRepository.GetLatestByEmail(email)
 	if err != nil {
 		if err == domain.ErrOTPNotFound {
 			return nil, domain.ErrInvalidOTP
@@ -109,13 +109,13 @@ func (s *AuthService) VerifyOTP(email, otpCode string) (*domain.User, error) {
 		return nil, domain.ErrInvalidOTP
 	}
 
-	if err := s.otpRepo.DeleteByEmail(email); err != nil {
+	if err := s.otpRepository.DeleteByEmail(email); err != nil {
 		log.Printf("Warning: failed to delete OTP for %s: %v", email, err)
 	}
 
 	s.verifyLimiter.Reset(email)
 
-	user, err := s.userRepo.GetByEmail(email)
+	user, err := s.userRepository.GetByEmail(email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -125,7 +125,7 @@ func (s *AuthService) VerifyOTP(email, otpCode string) (*domain.User, error) {
 }
 
 func (s *AuthService) GetUserByID(userID int) (*domain.User, error) {
-	user, err := s.userRepo.GetByID(userID)
+	user, err := s.userRepository.GetByID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}

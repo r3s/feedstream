@@ -16,22 +16,22 @@ import (
 )
 
 type FeedService struct {
-	feedRepo      repository.FeedRepository
-	feedItemRepo  repository.FeedItemRepository
-	dateFormatter *datetime.Formatter
-	lastCleanup   time.Time
-	cleanupMu     sync.Mutex
+	feedRepository     repository.FeedRepository
+	feedItemRepository repository.FeedItemRepository
+	dateFormatter      *datetime.Formatter
+	lastCleanup        time.Time
+	cleanupMu          sync.Mutex
 }
 
 func NewFeedService(
-	feedRepo repository.FeedRepository,
-	feedItemRepo repository.FeedItemRepository,
+	feedRepository repository.FeedRepository,
+	feedItemRepository repository.FeedItemRepository,
 	dateFormatter *datetime.Formatter,
 ) *FeedService {
 	return &FeedService{
-		feedRepo:     feedRepo,
-		feedItemRepo: feedItemRepo,
-		dateFormatter: dateFormatter,
+		feedRepository:     feedRepository,
+		feedItemRepository: feedItemRepository,
+		dateFormatter:      dateFormatter,
 	}
 }
 
@@ -45,7 +45,7 @@ func (s *FeedService) CreateFeed(name, url string, userID int) (*domain.Feed, er
 		return nil, err
 	}
 
-	exists, err := s.feedRepo.ExistsByURL(userID, url)
+	exists, err := s.feedRepository.ExistsByURL(userID, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check feed existence: %w", err)
 	}
@@ -53,7 +53,7 @@ func (s *FeedService) CreateFeed(name, url string, userID int) (*domain.Feed, er
 		return nil, domain.ErrFeedAlreadyExists
 	}
 
-	createdFeed, err := s.feedRepo.Create(name, url, userID)
+	createdFeed, err := s.feedRepository.Create(name, url, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create feed: %w", err)
 	}
@@ -62,7 +62,7 @@ func (s *FeedService) CreateFeed(name, url string, userID int) (*domain.Feed, er
 }
 
 func (s *FeedService) GetFeedsByUserID(userID int) ([]domain.Feed, error) {
-	feeds, err := s.feedRepo.GetAllByUserID(userID)
+	feeds, err := s.feedRepository.GetAllByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feeds: %w", err)
 	}
@@ -70,7 +70,7 @@ func (s *FeedService) GetFeedsByUserID(userID int) ([]domain.Feed, error) {
 }
 
 func (s *FeedService) GetFeedByID(feedID, userID int) (*domain.Feed, error) {
-	feed, err := s.feedRepo.GetByID(feedID, userID)
+	feed, err := s.feedRepository.GetByID(feedID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feed: %w", err)
 	}
@@ -88,7 +88,7 @@ func (s *FeedService) UpdateFeed(feedID int, name, url string, userID int) error
 		return err
 	}
 
-	if err := s.feedRepo.Update(feedID, name, url, userID); err != nil {
+	if err := s.feedRepository.Update(feedID, name, url, userID); err != nil {
 		return fmt.Errorf("failed to update feed: %w", err)
 	}
 
@@ -96,7 +96,7 @@ func (s *FeedService) UpdateFeed(feedID int, name, url string, userID int) error
 }
 
 func (s *FeedService) DeleteFeed(feedID, userID int) error {
-	if err := s.feedRepo.Delete(feedID, userID); err != nil {
+	if err := s.feedRepository.Delete(feedID, userID); err != nil {
 		return fmt.Errorf("failed to delete feed: %w", err)
 	}
 	return nil
@@ -111,7 +111,7 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 	s.cleanupMu.Unlock()
 
 	if shouldCleanup {
-		deleted, err := s.feedItemRepo.DeleteOlderThan(90)
+		deleted, err := s.feedItemRepository.DeleteOlderThan(90)
 		if err != nil {
 			log.Printf("Warning: cleanup failed: %v", err)
 		} else if deleted > 0 {
@@ -119,7 +119,7 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 		}
 	}
 
-	feeds, err := s.feedRepo.GetAllByUserID(userID)
+	feeds, err := s.feedRepository.GetAllByUserID(userID)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get feeds: %w", err)
 	}
@@ -164,7 +164,7 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 				continue
 			}
 
-			err = s.feedItemRepo.Create(feedItem)
+			err = s.feedItemRepository.Create(feedItem)
 			if err != nil {
 				log.Printf("Error creating feed item '%s': %v", item.Title, err)
 			} else {
@@ -183,12 +183,12 @@ type FeedItemGroup struct {
 }
 
 func (s *FeedService) GetFeedItemsGroupedByDate(userID int, daysOffset int) ([]FeedItemGroup, bool, []string, error) {
-	items, err := s.feedItemRepo.GetByUserIDPaginated(userID, daysOffset)
+	items, err := s.feedItemRepository.GetByUserIDPaginated(userID, daysOffset)
 	if err != nil {
 		return nil, false, nil, fmt.Errorf("failed to get feed items: %w", err)
 	}
 
-	hasMore, err := s.feedItemRepo.HasMoreItems(userID, daysOffset)
+	hasMore, err := s.feedItemRepository.HasMoreItems(userID, daysOffset)
 	if err != nil {
 		log.Printf("Error checking for more items: %v", err)
 		hasMore = false
@@ -234,7 +234,7 @@ func (s *FeedService) GetFeedItemsGroupedByDate(userID int, daysOffset int) ([]F
 		})
 	}
 
-	if err := s.feedItemRepo.MarkAllAsOld(userID); err != nil {
+	if err := s.feedItemRepository.MarkAllAsOld(userID); err != nil {
 		log.Printf("Warning: failed to mark items as old: %v", err)
 	}
 
@@ -251,7 +251,7 @@ func (s *FeedService) ImportFeeds(userID int, feeds []struct{ Name, URL string }
 			continue
 		}
 
-		exists, err := s.feedRepo.ExistsByURL(userID, feedData.URL)
+		exists, err := s.feedRepository.ExistsByURL(userID, feedData.URL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("Error checking feed %s: %v", feedData.Name, err))
 			continue
@@ -262,7 +262,7 @@ func (s *FeedService) ImportFeeds(userID int, feeds []struct{ Name, URL string }
 			continue
 		}
 
-		_, err = s.feedRepo.Create(feedData.Name, feedData.URL, userID)
+		_, err = s.feedRepository.Create(feedData.Name, feedData.URL, userID)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("Error creating feed %s: %v", feedData.Name, err))
 			continue
@@ -275,7 +275,7 @@ func (s *FeedService) ImportFeeds(userID int, feeds []struct{ Name, URL string }
 }
 
 func (s *FeedService) ExportFeeds(userID int) ([]domain.Feed, error) {
-	feeds, err := s.feedRepo.GetAllByUserID(userID)
+	feeds, err := s.feedRepository.GetAllByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to export feeds: %w", err)
 	}
