@@ -60,6 +60,10 @@ func (s *AuthService) SendOTP(email string) error {
 		return fmt.Errorf("failed to generate OTP: %w", err)
 	}
 
+	if err := s.otpRepo.DeleteByEmail(email); err != nil {
+		log.Printf("Warning: failed to delete old OTPs for %s: %v", email, err)
+	}
+
 	expiresAt := time.Now().Add(10 * time.Minute)
 	if err := s.otpRepo.Store(email, otp, expiresAt); err != nil {
 		return fmt.Errorf("failed to store OTP: %w", err)

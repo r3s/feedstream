@@ -7,9 +7,11 @@ import (
 	"rss-reader/internal/repository"
 	"rss-reader/pkg/datetime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/mmcdole/gofeed"
 )
 
@@ -144,7 +146,7 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 
 			publishedAt, _ := s.dateFormatter.ParseRSSDate(item.Published)
 
-			description := item.Description
+			description := stripHTMLTags(item.Description)
 			if len(description) > 1000 {
 				description = description[:1000] + "..."
 			}
@@ -278,4 +280,15 @@ func (s *FeedService) ExportFeeds(userID int) ([]domain.Feed, error) {
 		return nil, fmt.Errorf("failed to export feeds: %w", err)
 	}
 	return feeds, nil
+}
+
+func stripHTMLTags(html string) string {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return html
+	}
+
+	text := doc.Text()
+	text = strings.Join(strings.Fields(text), " ")
+	return strings.TrimSpace(text)
 }

@@ -11,14 +11,21 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
-	authMw      *middleware.AuthMiddleware
+	authService   *service.AuthService
+	authMw        *middleware.AuthMiddleware
+	loginTemplate *template.Template
 }
 
 func NewAuthHandler(authService *service.AuthService, authMw *middleware.AuthMiddleware) *AuthHandler {
+	tmpl, err := template.ParseFiles("templates/login.html")
+	if err != nil {
+		log.Fatalf("Failed to parse login template: %v", err)
+	}
+
 	return &AuthHandler{
-		authService: authService,
-		authMw:      authMw,
+		authService:   authService,
+		authMw:        authMw,
+		loginTemplate: tmpl,
 	}
 }
 
@@ -37,12 +44,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) showLoginPage(w http.ResponseWriter, r *http.Request, data map[string]string) {
-	tmpl, err := template.ParseFiles("templates/login.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	if data == nil {
 		data = make(map[string]string)
 	}
@@ -54,7 +55,7 @@ func (h *AuthHandler) showLoginPage(w http.ResponseWriter, r *http.Request, data
 		"csrfField": csrf.TemplateField(r),
 	}
 
-	tmpl.Execute(w, templateData)
+	h.loginTemplate.Execute(w, templateData)
 }
 
 func (h *AuthHandler) handleLoginPost(w http.ResponseWriter, r *http.Request) {

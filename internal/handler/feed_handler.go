@@ -16,14 +16,42 @@ import (
 )
 
 type FeedHandler struct {
-	feedService *service.FeedService
-	authMw      *middleware.AuthMiddleware
+	feedService         *service.FeedService
+	authMw              *middleware.AuthMiddleware
+	feedsTemplate       *template.Template
+	addFeedTemplate     *template.Template
+	manageFeedsTemplate *template.Template
+	editFeedTemplate    *template.Template
 }
 
 func NewFeedHandler(feedService *service.FeedService, authMw *middleware.AuthMiddleware) *FeedHandler {
+	feedsTemplate, err := template.ParseFiles("templates/feeds.html")
+	if err != nil {
+		log.Fatalf("Failed to parse feeds template: %v", err)
+	}
+
+	addFeedTemplate, err := template.ParseFiles("templates/add_feed.html")
+	if err != nil {
+		log.Fatalf("Failed to parse add_feed template: %v", err)
+	}
+
+	manageFeedsTemplate, err := template.ParseFiles("templates/manage_feeds.html")
+	if err != nil {
+		log.Fatalf("Failed to parse manage_feeds template: %v", err)
+	}
+
+	editFeedTemplate, err := template.ParseFiles("templates/edit_feed.html")
+	if err != nil {
+		log.Fatalf("Failed to parse edit_feed template: %v", err)
+	}
+
 	return &FeedHandler{
-		feedService: feedService,
-		authMw:      authMw,
+		feedService:         feedService,
+		authMw:              authMw,
+		feedsTemplate:       feedsTemplate,
+		addFeedTemplate:     addFeedTemplate,
+		manageFeedsTemplate: manageFeedsTemplate,
+		editFeedTemplate:    editFeedTemplate,
 	}
 }
 
@@ -72,12 +100,7 @@ func (h *FeedHandler) ViewFeeds(w http.ResponseWriter, r *http.Request) {
 		FeedNames:   feedNames,
 	}
 
-	tmpl, err := template.ParseFiles("templates/feeds.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	tmpl.Execute(w, pageData)
+	h.feedsTemplate.Execute(w, pageData)
 }
 
 func (h *FeedHandler) AddFeed(w http.ResponseWriter, r *http.Request) {
@@ -95,17 +118,11 @@ func (h *FeedHandler) AddFeed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FeedHandler) showAddFeedPage(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/add_feed.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	
 	data := map[string]interface{}{
 		"csrfField": csrf.TemplateField(r),
 	}
 	
-	tmpl.Execute(w, data)
+	h.addFeedTemplate.Execute(w, data)
 }
 
 func (h *FeedHandler) handleAddFeedPost(w http.ResponseWriter, r *http.Request) {
@@ -165,22 +182,15 @@ func (h *FeedHandler) ManageFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/manage_feeds.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	
 	data := map[string]interface{}{
 		"Feeds": feeds,
 	}
 	
-	// Only add CSRF field if middleware is enabled (production)
 	if csrfToken := csrf.Token(r); csrfToken != "" {
 		data["csrfField"] = csrf.TemplateField(r)
 	}
 	
-	if err := tmpl.Execute(w, data); err != nil {
+	if err := h.manageFeedsTemplate.Execute(w, data); err != nil {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Error rendering page", http.StatusInternalServerError)
 		return
@@ -222,12 +232,6 @@ func (h *FeedHandler) showEditFeedPage(w http.ResponseWriter, r *http.Request, f
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/edit_feed.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	data := map[string]interface{}{
 		"ID":        feed.ID,
 		"Name":      feed.Name,
@@ -235,7 +239,7 @@ func (h *FeedHandler) showEditFeedPage(w http.ResponseWriter, r *http.Request, f
 		"csrfField": csrf.TemplateField(r),
 	}
 
-	tmpl.Execute(w, data)
+	h.editFeedTemplate.Execute(w, data)
 }
 
 func (h *FeedHandler) handleEditFeedPost(w http.ResponseWriter, r *http.Request, feedID, userID int) {
