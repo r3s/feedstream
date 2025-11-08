@@ -183,11 +183,8 @@ func (h *FeedHandler) ManageFeeds(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Feeds": feeds,
-	}
-	
-	if csrfToken := csrf.Token(r); csrfToken != "" {
-		data["csrfField"] = csrf.TemplateField(r)
+		"Feeds":     feeds,
+		"csrfField": csrf.TemplateField(r),
 	}
 	
 	if err := h.manageFeedsTemplate.Execute(w, data); err != nil {
