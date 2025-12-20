@@ -3,27 +3,47 @@ version: "3.8"
 services:
   app:
     build: .
+    container_name: rss-reader-app
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
-      - APP_PORT=${APP_PORT}
+      - APP_PORT=8080
+      - APP_URL=${APP_URL}
+      - CSRF_SECRET=${CSRF_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
       - EMAIL_FROM=${EMAIL_FROM}
+      - ENVIRONMENT=${ENVIRONMENT}
       - RESEND_API_KEY=${RESEND_API_KEY}
-      - SESSION_SECRET=${SESSION_SECRET:-something-very-secret}
+      - SESSION_SECRET=${SESSION_SECRET}
+    restart: unless-stopped
+    networks:
+      - rss-reader-network
 
   db:
-    image: postgres:18-alpine
+    image: postgres:16-alpine
+    container_name: rss-reader-db
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-rssreader}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - rss-reader-network
 
 volumes:
   postgres_data:
+    driver: local
+
+networks:
+  rss-reader-network:
+    driver: bridge
