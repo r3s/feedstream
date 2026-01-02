@@ -31,7 +31,16 @@
                 {{range .Feeds}}
                 <div class="feed-row">
                     <div class="feed-item-row">
-                        <span class="feed-name">{{.Name}}</span>
+                        <span class="feed-name">
+                            {{if eq .LastFetchStatus "success"}}
+                            <span class="status-dot status-success" title="Last fetch successful{{if .LastFetchAt}} at {{.LastFetchAt.Local.Format "Jan 2, 2006 3:04 PM"}}{{end}}"></span>
+                            {{else if eq .LastFetchStatus "failed"}}
+                            <span class="status-dot status-failed" title="Last fetch failed{{if .LastFetchAt}} at {{.LastFetchAt.Local.Format "Jan 2, 2006 3:04 PM"}}{{end}}{{if .LastFetchError}}: {{.LastFetchError}}{{end}}"></span>
+                            {{else}}
+                            <span class="status-dot status-never" title="Never fetched"></span>
+                            {{end}}
+                            {{.Name}}
+                        </span>
                         <span class="feed-url">
                             <a href="{{.URL}}" target="_blank" rel="noopener">{{.URL}}</a>
                         </span>
@@ -60,5 +69,24 @@
 
         <script src="/static/js/theme.js"></script>
         <script src="/static/js/import-export.js"></script>
+        <style>
+            .status-dot {
+                display: inline-block;
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                margin-right: 8px;
+                vertical-align: middle;
+            }
+            .status-success {
+                background-color: #10b981;
+            }
+            .status-failed {
+                background-color: #ef4444;
+            }
+            .status-never {
+                background-color: #9ca3af;
+            }
+        </style>
     </body>
 </html>

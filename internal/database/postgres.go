@@ -88,11 +88,11 @@ func (m *Manager) runMigrations() error {
 		`DO $$
 		BEGIN
 			IF EXISTS (
-				SELECT 1 FROM information_schema.table_constraints 
+				SELECT 1 FROM information_schema.table_constraints
 				WHERE constraint_name = 'feed_items_feed_id_fkey'
 			) THEN
 				ALTER TABLE feed_items DROP CONSTRAINT feed_items_feed_id_fkey;
-				ALTER TABLE feed_items ADD CONSTRAINT feed_items_feed_id_fkey 
+				ALTER TABLE feed_items ADD CONSTRAINT feed_items_feed_id_fkey
 					FOREIGN KEY (feed_id) REFERENCES feeds(id) ON DELETE CASCADE;
 			END IF;
 		END $$`,
@@ -100,6 +100,33 @@ func (m *Manager) runMigrations() error {
 		`CREATE INDEX IF NOT EXISTS idx_feed_items_published_at ON feed_items(published_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_feeds_user_id ON feeds(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_otps_email ON otps(email, expires_at DESC)`,
+		`DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM information_schema.columns
+				WHERE table_name = 'feeds' AND column_name = 'last_fetch_status'
+			) THEN
+				ALTER TABLE feeds ADD COLUMN last_fetch_status TEXT DEFAULT 'never';
+			END IF;
+		END $$`,
+		`DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM information_schema.columns
+				WHERE table_name = 'feeds' AND column_name = 'last_fetch_at'
+			) THEN
+				ALTER TABLE feeds ADD COLUMN last_fetch_at TIMESTAMP WITH TIME ZONE;
+			END IF;
+		END $$`,
+		`DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM information_schema.columns
+				WHERE table_name = 'feeds' AND column_name = 'last_fetch_error'
+			) THEN
+				ALTER TABLE feeds ADD COLUMN last_fetch_error TEXT;
+			END IF;
+		END $$`,
 	}
 
 	for i, migration := range migrations {

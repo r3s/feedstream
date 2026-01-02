@@ -136,6 +136,11 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 		parsedFeed, err := parser.ParseURL(feed.URL)
 		if err != nil {
 			log.Printf("Error parsing feed %s (%s): %v", feed.Name, feed.URL, err)
+
+			errMsg := err.Error()
+			if err := s.feedRepository.UpdateFetchStatus(feed.ID, "failed", &errMsg); err != nil {
+				log.Printf("Failed to update fetch status for feed %d: %v", feed.ID, err)
+			}
 			continue
 		}
 
@@ -170,6 +175,10 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 			} else {
 				newItems++
 			}
+		}
+
+		if err := s.feedRepository.UpdateFetchStatus(feed.ID, "success", nil); err != nil {
+			log.Printf("Failed to update fetch status for feed %d: %v", feed.ID, err)
 		}
 	}
 

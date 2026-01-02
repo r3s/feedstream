@@ -13,6 +13,7 @@ type FeedRepository interface {
 	Update(feedID int, name, url string, userID int) error
 	Delete(feedID, userID int) error
 	ExistsByURL(userID int, url string) (bool, error)
+	UpdateFetchStatus(feedID int, status string, fetchError *string) error
 }
 
 type feedRepository struct {
@@ -25,9 +26,10 @@ func NewFeedRepository(db *sql.DB) FeedRepository {
 
 func (r *feedRepository) Create(name, url string, userID int) (*domain.Feed, error) {
 	feed := &domain.Feed{
-		Name:   name,
-		URL:    url,
-		UserID: userID,
+		Name:            name,
+		URL:             url,
+		UserID:          userID,
+		LastFetchStatus: "never",
 	}
 
 	err := r.db.QueryRow(
@@ -46,9 +48,11 @@ func (r *feedRepository) GetByID(feedID, userID int) (*domain.Feed, error) {
 	feed := &domain.Feed{}
 
 	err := r.db.QueryRow(
-		"SELECT id, name, url, user_id, created_at FROM feeds WHERE id = $1 AND user_id = $2",
+		`SELECT id, name, url, user_id, created_at, last_fetch_status, last_fetch_at, last_fetch_error
+		FROM feeds WHERE id = $1 AND user_id = $2`,
 		feedID, userID,
-	).Scan(&feed.ID, &feed.Name, &feed.URL, &feed.UserID, &feed.CreatedAt)
+	).Scan(&feed.ID, &feed.Name, &feed.URL, &feed.UserID, &feed.CreatedAt,
+		&feed.LastFetchStatus, &feed.LastFetchAt, &feed.LastFetchError)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -62,7 +66,8 @@ func (r *feedRepository) GetByID(feedID, userID int) (*domain.Feed, error) {
 
 func (r *feedRepository) GetAllByUserID(userID int) ([]domain.Feed, error) {
 	rows, err := r.db.Query(
-		"SELECT id, name, url, user_id, created_at FROM feeds WHERE user_id = $1 ORDER BY name",
+		`SELECT id, name, url, user_id, created_at, last_fetch_status, last_fetch_at, last_fetch_error
+		FROM feeds WHERE user_id = $1 ORDER BY name`,
 		userID,
 	)
 	if err != nil {
@@ -73,7 +78,8 @@ func (r *feedRepository) GetAllByUserID(userID int) ([]domain.Feed, error) {
 	var feeds []domain.Feed
 	for rows.Next() {
 		var feed domain.Feed
-		err := rows.Scan(&feed.ID, &feed.Name, &feed.URL, &feed.UserID, &feed.CreatedAt)
+		err := rows.Scan(&feed.ID, &feed.Name, &feed.URL, &feed.UserID, &feed.CreatedAt,
+			&feed.LastFetchStatus, &feed.LastFetchAt, &feed.LastFetchError)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan feed: %w", err)
 		}
@@ -141,4 +147,18 @@ func (r *feedRepository) ExistsByURL(userID int, url string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+func (r *feedRepository) UpdateFetchStatus(feedID int, status string, fetchError *string) error {
+	_, err := r.db.Exec(
+		`UPDATE feeds
+		SET last_fetch_status = $1, last_fetch_at = NOW(), last_fetch_error = $2
+		WHERE id = $3`,
+		status, fetchError, feedID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update fetch status: %w", err)
+	}
+
+	return nil
 }
