@@ -69,14 +69,9 @@ func (h *FeedHandler) ViewFeeds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Refresh feeds when viewing the page
-	if daysOffset == 0 {
-		totalItems, newItems, err := h.feedService.RefreshFeeds(userID)
-		if err != nil {
-			log.Printf("Error refreshing feeds: %v", err)
-		} else {
-			log.Printf("Auto-refreshed feeds for user %d: %d total, %d new", userID, totalItems, newItems)
-		}
+	// Check if cache is stale and refresh in background if needed
+	if daysOffset == 0 && h.feedService.ShouldRefreshFeeds(userID) {
+		h.feedService.RefreshFeedsAsync(userID)
 	}
 
 	dateGroups, hasMore, feedNames, err := h.feedService.GetFeedItemsGroupedByDate(userID, daysOffset)
@@ -121,7 +116,7 @@ func (h *FeedHandler) showAddFeedPage(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"csrfField": csrf.TemplateField(r),
 	}
-	
+
 	h.addFeedTemplate.Execute(w, data)
 }
 
@@ -186,7 +181,7 @@ func (h *FeedHandler) ManageFeeds(w http.ResponseWriter, r *http.Request) {
 		"Feeds":     feeds,
 		"csrfField": csrf.TemplateField(r),
 	}
-	
+
 	if err := h.manageFeedsTemplate.Execute(w, data); err != nil {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Error rendering page", http.StatusInternalServerError)

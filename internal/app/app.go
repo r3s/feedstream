@@ -55,7 +55,7 @@ func New(cfg *config.Config) (*Application, error) {
 		log.Println("Authentication will not work without email service")
 	}
 	authService := service.NewAuthService(userRepository, otpRepository, emailService, otpGenerator)
-	feedService := service.NewFeedService(feedRepository, feedItemRepository, dateFormatter)
+	feedService := service.NewFeedService(feedRepository, feedItemRepository, dateFormatter, cfg.FeedCacheTTLHours)
 
 	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	sessionStore.Options = &sessions.Options{
@@ -115,13 +115,13 @@ func securityHeadersMiddleware(isProduction bool) func(http.Handler) http.Handle
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("X-XSS-Protection", "1; mode=block")
 			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-			
+
 			if isProduction {
 				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
 			} else {
 				w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}

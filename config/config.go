@@ -6,25 +6,27 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DatabaseURL   string
-	DBHost        string
-	DBPort        string
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	AppPort       string
-	EmailFrom     string
-	ResendAPIKey  string
-	SessionSecret string
-	CSRFSecret    string
-	Environment   string
-	AppURL        string
+	DatabaseURL       string
+	DBHost            string
+	DBPort            string
+	DBUser            string
+	DBPassword        string
+	DBName            string
+	AppPort           string
+	EmailFrom         string
+	ResendAPIKey      string
+	SessionSecret     string
+	CSRFSecret        string
+	Environment       string
+	AppURL            string
+	FeedCacheTTLHours int
 }
 
 func Load() *Config {
@@ -47,7 +49,7 @@ func Load() *Config {
 
 	appPort := getEnv("APP_PORT", "8080")
 	appURL := getEnv("APP_URL", "")
-	
+
 	if appURL == "" {
 		if environment == "production" {
 			log.Println("Warning: APP_URL not set in production, CSRF origin validation may fail")
@@ -56,21 +58,30 @@ func Load() *Config {
 		}
 	}
 
+	feedCacheTTL := 5
+	if ttlStr := getEnv("FEED_CACHE_TTL_HOURS", ""); ttlStr != "" {
+		if ttl, err := parseIntEnv(ttlStr, 5); err == nil {
+			feedCacheTTL = ttl
+		}
+	}
+
 	cfg := &Config{
-		DatabaseURL:   getEnv("DATABASE_URL", ""),
-		AppPort:       appPort,
-		EmailFrom:     getEnv("EMAIL_FROM", ""),
-		ResendAPIKey:  getEnv("RESEND_API_KEY", ""),
-		SessionSecret: sessionSecret,
-		CSRFSecret:    csrfSecret,
-		Environment:   environment,
-		AppURL:        appURL,
+		DatabaseURL:       getEnv("DATABASE_URL", ""),
+		AppPort:           appPort,
+		EmailFrom:         getEnv("EMAIL_FROM", ""),
+		ResendAPIKey:      getEnv("RESEND_API_KEY", ""),
+		SessionSecret:     sessionSecret,
+		CSRFSecret:        csrfSecret,
+		Environment:       environment,
+		AppURL:            appURL,
+		FeedCacheTTLHours: feedCacheTTL,
 	}
 
 	log.Printf("Configuration loaded:")
 	log.Printf("  Environment: %s", cfg.Environment)
 	log.Printf("  APP_PORT: %s", cfg.AppPort)
 	log.Printf("  APP_URL: %s", cfg.AppURL)
+	log.Printf("  FEED_CACHE_TTL_HOURS: %d", cfg.FeedCacheTTLHours)
 
 	if cfg.DatabaseURL != "" {
 		cfg.parseDBURL()
@@ -115,12 +126,12 @@ func (c *Config) parseDBURL() {
 
 func generateRandomSecret(name string) string {
 	log.Printf("Warning: %s not set, generating random secret (will not persist across restarts)", name)
-	
+
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		log.Fatalf("Failed to generate random secret for %s: %v", name, err)
 	}
-	
+
 	return base64.StdEncoding.EncodeToString(b)
 }
 
@@ -130,4 +141,15 @@ func (c *Config) IsProduction() bool {
 
 func (c *Config) IsDevelopment() bool {
 	return c.Environment == "development"
+}
+
+func parseIntEnv(value string, fallback int) (int, error) {
+	if value == "" {
+		return fallback, nil
+	}
+	result, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback, err
+	}
+	return result, nil
 }

@@ -21,17 +21,20 @@ type FeedService struct {
 	dateFormatter      *datetime.Formatter
 	lastCleanup        time.Time
 	cleanupMu          sync.Mutex
+	refreshCache       *FeedRefreshCache
 }
 
 func NewFeedService(
 	feedRepository repository.FeedRepository,
 	feedItemRepository repository.FeedItemRepository,
 	dateFormatter *datetime.Formatter,
+	cacheTTLHours int,
 ) *FeedService {
 	return &FeedService{
 		feedRepository:     feedRepository,
 		feedItemRepository: feedItemRepository,
 		dateFormatter:      dateFormatter,
+		refreshCache:       NewFeedRefreshCache(cacheTTLHours),
 	}
 }
 
@@ -183,6 +186,7 @@ func (s *FeedService) RefreshFeeds(userID int) (int, int, error) {
 	}
 
 	log.Printf("Feed refresh complete: processed %d items, %d new/updated", totalItems, newItems)
+	s.refreshCache.RecordRefresh(userID)
 	return totalItems, newItems, nil
 }
 
@@ -248,6 +252,19 @@ func (s *FeedService) GetFeedItemsGroupedByDate(userID int, daysOffset int) ([]F
 	}
 
 	return orderedGroups, hasMore, feedNames, nil
+}
+
+func (s *FeedService) ShouldRefreshFeeds(userID int) bool {
+	return s.refreshCache.ShouldRefresh(userID)
+}
+
+func (s *FeedService) RefreshFeedsAsync(userID int) {
+	go func() {
+		_, _, err := s.RefreshFeeds(userID)
+		if err != nil {
+			log.Printf("Background refresh failed for user %d: %v", userID, err)
+		}
+	}()
 }
 
 func (s *FeedService) ImportFeeds(userID int, feeds []struct{ Name, URL string }) (int, []string) {
